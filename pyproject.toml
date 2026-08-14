@@ -7,7 +7,11 @@ name = "text-to-sql-clarification-engine"
 version = "0.1.0"
 description = "Production-oriented Text-to-SQL system with a Clarification Engineer"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "python-dotenv>=1.0",
+]
 
 [dependency-groups]
 dev = [
