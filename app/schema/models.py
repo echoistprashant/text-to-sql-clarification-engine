@@ -26,3 +26,32 @@ class TableSchema:
 @dataclass(frozen=True)
 class DatabaseSchema:
     tables: list[TableSchema]
+
+
+@dataclass(frozen=True)
+class ColumnValueProfile:
+    table_name: str
+    column_name: str
+    values: list[str]
+
+
+@dataclass(frozen=True)
+class ValueMatch:
+    table_name: str
+    column_name: str
+    value: str
+
+
+@dataclass(frozen=True)
+class RankedTable:
+    table_name: str
+    score: int
+
+
+
+@dataclass(frozen=True)
+class SchemaRetrievalResult:
+    tables: list[str]
+    value_matches: list[ValueMatch]
+    ranked_tables: list[RankedTable]
+    join_path: list[str]    

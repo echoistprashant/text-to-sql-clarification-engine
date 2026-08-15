@@ -33,8 +33,8 @@ def test_retriever_expands_related_tables():
 
     tables = retrieve_tables(
         schema,
-        "Show me customers",
-        max_hops=2,
+        "Which customers bought the most laptops?",
+        max_hops=3,
     )
 
     table_names = {table.name for table in tables}
@@ -42,3 +42,4 @@ def test_retriever_expands_related_tables():
     assert "customers" in table_names
     assert "orders" in table_names
     assert "order_items" in table_names
+    assert "products" in table_names
