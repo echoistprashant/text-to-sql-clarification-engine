@@ -1,12 +1,10 @@
-from itertools import pairwise
-
 from app.intent.models import QueryIntent
 from app.schema.models import DatabaseSchema, SchemaRetrievalResult
+from app.sql.joins import build_joins
 from app.sql.models import (
     SQLAggregation,
     SQLColumn,
     SQLFilter,
-    SQLJoin,
     SQLOrder,
     SQLQuery,
 )
@@ -30,7 +28,10 @@ def _find_column(
     table_name: str,
     column_name: str,
 ):
-    table = _find_table(schema, table_name)
+    table = _find_table(
+        schema,
+        table_name,
+    )
 
     for column in table.columns:
         if column.name == column_name:
@@ -53,68 +54,6 @@ def _split_qualified_column(
         )
 
     return parts[0], parts[1]
-
-
-def _build_joins(
-    schema: DatabaseSchema,
-    join_path: list[str],
-) -> list[SQLJoin]:
-    joins: list[SQLJoin] = []
-
-    for left_table_name, right_table_name in pairwise(join_path):
-    
-        left_table = _find_table(
-            schema,
-            left_table_name,
-        )
-
-        matching_foreign_key = None
-
-        for foreign_key in left_table.foreign_keys:
-            if foreign_key.references_table == right_table_name:
-                matching_foreign_key = foreign_key
-                break
-
-        if matching_foreign_key is not None:
-            joins.append(
-                SQLJoin(
-                    left_table=left_table_name,
-                    left_column=matching_foreign_key.column,
-                    right_table=right_table_name,
-                    right_column=matching_foreign_key.references_column,
-                )
-            )
-            continue
-
-        right_table = _find_table(
-            schema,
-            right_table_name,
-        )
-
-        matching_foreign_key = None
-
-        for foreign_key in right_table.foreign_keys:
-            if foreign_key.references_table == left_table_name:
-                matching_foreign_key = foreign_key
-                break
-
-        if matching_foreign_key is not None:
-            joins.append(
-                SQLJoin(
-                    left_table=left_table_name,
-                    left_column=matching_foreign_key.references_column,
-                    right_table=right_table_name,
-                    right_column=matching_foreign_key.column,
-                )
-            )
-            continue
-
-        raise ValueError(
-            "No foreign-key relationship exists between "
-            f"'{left_table_name}' and '{right_table_name}'."
-        )
-
-    return joins
 
 
 def _build_filters(
@@ -145,6 +84,12 @@ def _build_filters(
         )
 
     for match in value_matches:
+        _find_column(
+            schema,
+            match.table_name,
+            match.column_name,
+        )
+
         filters.append(
             SQLFilter(
                 table=match.table_name,
@@ -211,7 +156,7 @@ def plan_sql_query(
             )
         )
 
-    joins = _build_joins(
+    joins = build_joins(
         schema,
         schema_result.join_path,
     )
