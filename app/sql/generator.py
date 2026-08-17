@@ -1,8 +1,9 @@
-from app.sql.models import SQLQuery
+from app.sql.models import CompiledSQL, SQLQuery
 
 
-def generate_sql(query: SQLQuery) -> str:
+def compile_sql(query: SQLQuery) -> CompiledSQL:
     parts: list[str] = []
+    parameters: dict[str, str] = {}
 
     select_parts = [
         f"{column.table}.{column.column}"
@@ -32,7 +33,9 @@ def generate_sql(query: SQLQuery) -> str:
     ]
 
     if not select_items:
-        raise ValueError("SQL query must contain a SELECT expression.")
+        raise ValueError(
+            "SQL query must contain a SELECT expression."
+        )
 
     parts.append(
         "SELECT " + ", ".join(select_items)
@@ -40,31 +43,45 @@ def generate_sql(query: SQLQuery) -> str:
 
     if not query.select_columns:
         raise ValueError(
-            "SQL query must contain at least one selected column."
+            "SQL query must contain at least one "
+            "selected column."
         )
 
     from_table = query.select_columns[0].table
-    parts.append(f"FROM {from_table}")
+
+    parts.append(
+        f"FROM {from_table}"
+    )
 
     for join in query.joins:
         parts.append(
-            f"{join.join_type} JOIN {join.right_table} "
-            f"ON {join.left_table}.{join.left_column} = "
-            f"{join.right_table}.{join.right_column}"
+            f"{join.join_type} JOIN "
+            f"{join.right_table} "
+            f"ON {join.left_table}."
+            f"{join.left_column} = "
+            f"{join.right_table}."
+            f"{join.right_column}"
         )
 
     if query.filters:
-        filters = [
-            (
+        filter_parts = []
+
+        for index, item in enumerate(
+            query.filters,
+            start=1,
+        ):
+            parameter_name = f"param_{index}"
+
+            filter_parts.append(
                 f"{item.table}.{item.column} "
                 f"{item.operator} "
-                f"'{item.value}'"
+                f":{parameter_name}"
             )
-            for item in query.filters
-        ]
+
+            parameters[parameter_name] = item.value
 
         parts.append(
-            "WHERE " + " AND ".join(filters)
+            "WHERE " + " AND ".join(filter_parts)
         )
 
     if query.group_by:
@@ -79,7 +96,8 @@ def generate_sql(query: SQLQuery) -> str:
 
     if query.order_by:
         order_items = [
-            f"{item.expression} {item.direction}"
+            f"{item.expression} "
+            f"{item.direction}"
             for item in query.order_by
         ]
 
@@ -88,6 +106,15 @@ def generate_sql(query: SQLQuery) -> str:
         )
 
     if query.limit is not None:
-        parts.append(f"LIMIT {query.limit}")
+        parts.append(
+            f"LIMIT {query.limit}"
+        )
 
-    return "\n".join(parts) + ";"
+    return CompiledSQL(
+        sql="\n".join(parts) + ";",
+        parameters=parameters,
+    )
+
+
+def generate_sql(query: SQLQuery) -> str:
+    return compile_sql(query).sql

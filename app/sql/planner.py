@@ -43,6 +43,42 @@ def _find_column(
     )
 
 
+def _find_display_column(
+    schema: DatabaseSchema,
+    table_name: str,
+) -> str:
+    table = _find_table(
+        schema,
+        table_name,
+    )
+
+    preferred_names = (
+        "name",
+        "title",
+        "label",
+        "description",
+    )
+
+    column_names = {
+        column.name
+        for column in table.columns
+    }
+
+    for preferred_name in preferred_names:
+        if preferred_name in column_names:
+            return preferred_name
+
+    if table.primary_key:
+        return table.primary_key[0]
+
+    if not table.columns:
+        raise ValueError(
+            f"Table '{table_name}' has no columns."
+        )
+
+    return table.columns[0].name
+
+
 def _split_qualified_column(
     value: str,
 ) -> tuple[str, str]:
@@ -122,10 +158,15 @@ def plan_sql_query(
             "Schema retrieval result must contain a join path."
         )
 
+    display_column = _find_display_column(
+        schema,
+        intent.entity,
+    )
+
     select_columns = [
         SQLColumn(
             table=intent.entity,
-            column="name",
+            column=display_column,
         )
     ]
 
@@ -170,7 +211,7 @@ def plan_sql_query(
     group_by = [
         SQLColumn(
             table=intent.entity,
-            column="name",
+            column=display_column,
         )
     ]
 

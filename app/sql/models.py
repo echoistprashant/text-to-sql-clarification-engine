@@ -41,12 +41,28 @@ class SQLOrder:
 
 @dataclass(frozen=True)
 class SQLQuery:
-    select_columns: list[SQLColumn] = field(default_factory=list)
-    joins: list[SQLJoin] = field(default_factory=list)
-    filters: list[SQLFilter] = field(default_factory=list)
+    select_columns: list[SQLColumn] = field(
+        default_factory=list
+    )
+    joins: list[SQLJoin] = field(
+        default_factory=list
+    )
+    filters: list[SQLFilter] = field(
+        default_factory=list
+    )
     aggregations: list[SQLAggregation] = field(
         default_factory=list
     )
-    group_by: list[SQLColumn] = field(default_factory=list)
-    order_by: list[SQLOrder] = field(default_factory=list)
+    group_by: list[SQLColumn] = field(
+        default_factory=list
+    )
+    order_by: list[SQLOrder] = field(
+        default_factory=list
+    )
     limit: int | None = None
+
+
+@dataclass(frozen=True)
+class CompiledSQL:
+    sql: str
+    parameters: dict[str, str]
