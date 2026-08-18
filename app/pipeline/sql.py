@@ -7,6 +7,11 @@ from app.pipeline.analysis import (
     answer_analysis,
 )
 from app.schema.models import DatabaseSchema
+from app.sql.answer import format_sql_result
+from app.sql.executor import (
+    SQLExecutionResult,
+    execute_sql_query,
+)
 from app.sql.generator import compile_sql
 from app.sql.models import SQLQuery
 from app.sql.planner import plan_sql_query
@@ -20,6 +25,16 @@ class SQLAnalysisResult:
     query: SQLQuery | None = None
     sql: str | None = None
     parameters: dict[str, str] | None = None
+
+
+@dataclass(frozen=True)
+class SQLAnswerResult:
+    analysis: AnalysisResult
+    query: SQLQuery
+    sql: str
+    parameters: dict[str, str]
+    execution: SQLExecutionResult
+    answer: str
 
 
 def analyze_for_sql(
@@ -69,6 +84,42 @@ def answer_sql_clarification(
     return _build_sql_result(
         updated_analysis,
         schema,
+    )
+
+
+def execute_sql_analysis(
+    result: SQLAnalysisResult,
+) -> SQLAnswerResult:
+    if result.query is None:
+        raise ValueError(
+            "Cannot execute SQL from an unresolved analysis."
+        )
+
+    if result.sql is None:
+        raise ValueError(
+            "Cannot execute SQL without compiled SQL."
+        )
+
+    if result.parameters is None:
+        raise ValueError(
+            "Cannot execute SQL without parameters."
+        )
+
+    execution = execute_sql_query(
+        result.query,
+    )
+
+    answer = format_sql_result(
+        execution,
+    )
+
+    return SQLAnswerResult(
+        analysis=result.analysis,
+        query=result.query,
+        sql=result.sql,
+        parameters=result.parameters,
+        execution=execution,
+        answer=answer,
     )
 
 

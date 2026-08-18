@@ -2,8 +2,10 @@ from dotenv import load_dotenv
 
 from app.db.schema_inspector import get_schema
 from app.llm.gemini import GeminiLLMClient
-from app.pipeline.sql import analyze_for_sql
-from app.sql.executor import execute_sql_query
+from app.pipeline.sql import (
+    analyze_for_sql,
+    execute_sql_analysis,
+)
 
 
 def main() -> None:
@@ -39,38 +41,45 @@ def main() -> None:
         print("SQL QUERY WAS NOT BUILT.")
         return
 
+    answer_result = execute_sql_analysis(
+        result,
+    )
+
     print()
     print("GENERATED SQL")
     print("=============")
-    print(result.sql)
+    print(answer_result.sql)
 
     print()
     print("PARAMETERS")
     print("==========")
-    print(result.parameters)
-
-    execution = execute_sql_query(
-        result.query,
-    )
+    print(answer_result.parameters)
 
     print()
     print("COLUMNS")
     print("=======")
 
-    for column in execution.columns:
+    for column in answer_result.execution.columns:
         print(f"- {column}")
 
     print()
     print("ROWS")
     print("====")
 
-    for row in execution.rows:
+    for row in answer_result.execution.rows:
         print(row)
 
     print()
     print("ROW COUNT")
     print("=========")
-    print(len(execution.rows))
+    print(
+        len(answer_result.execution.rows)
+    )
+
+    print()
+    print("FINAL ANSWER")
+    print("============")
+    print(answer_result.answer)
 
 
 if __name__ == "__main__":
