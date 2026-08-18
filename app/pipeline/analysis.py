@@ -7,7 +7,11 @@ from app.intent.workflow import (
     create_clarification_state,
 )
 from app.llm.client import LLMClient
-from app.schema.models import DatabaseSchema, SchemaRetrievalResult
+from app.llm.context import build_llm_schema_context
+from app.schema.models import (
+    DatabaseSchema,
+    SchemaRetrievalResult,
+)
 from app.schema.retrieval import retrieve_schema
 
 
@@ -30,8 +34,14 @@ def analyze_question(
         max_hops=max_hops,
     )
 
+    schema_context = build_llm_schema_context(
+        schema,
+        schema_result,
+    )
+
     intent = extract_intent(
         question,
+        schema_context,
         llm_client,
     )
 
