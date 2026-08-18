@@ -8,25 +8,104 @@ from app.intent.models import (
 )
 
 
-def parse_intent_response(response: str) -> QueryIntent:
-    data = json.loads(response)
+def _parse_filters(data: object) -> list[IntentFilter]:
+    if data is None:
+        return []
 
-    filters = [
-        IntentFilter(
-            column=item["column"],
-            operator=item["operator"],
-            value=item["value"],
+    if not isinstance(data, list):
+        raise TypeError(
+            "'filters' must be a list."
         )
-        for item in data.get("filters", [])
-    ]
+
+    filters: list[IntentFilter] = []
+
+    for item in data:
+        if not isinstance(item, dict):
+            raise TypeError(
+                "Each filter must be an object."
+            )
+
+        required_fields = (
+            "column",
+            "operator",
+            "value",
+        )
+
+        for field in required_fields:
+            if field not in item:
+                raise ValueError(
+                    f"Filter is missing required field "
+                    f"'{field}'."
+                )
+
+        filters.append(
+            IntentFilter(
+                column=item["column"],
+                operator=item["operator"],
+                value=item["value"],
+            )
+        )
+
+    return filters
+
+
+def parse_intent_response(
+    response: str,
+) -> QueryIntent:
+    try:
+        data = json.loads(response)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "LLM response is not valid JSON."
+        ) from exc
+
+    if not isinstance(data, dict):
+        raise TypeError(
+            "LLM intent response must be a JSON object."
+        )
+
+    filters = _parse_filters(
+        data.get("filters", [])
+    )
 
     aggregation = data.get("aggregation")
+
     if aggregation is not None:
-        aggregation = Aggregation(aggregation)
+        try:
+            aggregation = Aggregation(aggregation)
+        except ValueError as exc:
+            raise ValueError(
+                f"Unsupported aggregation: {aggregation!r}."
+            ) from exc
 
     sort_direction = data.get("sort_direction")
+
     if sort_direction is not None:
-        sort_direction = SortDirection(sort_direction)
+        try:
+            sort_direction = SortDirection(
+                sort_direction
+            )
+        except ValueError as exc:
+            raise ValueError(
+                "Unsupported sort direction: "
+                f"{sort_direction!r}."
+            ) from exc
+
+    limit = data.get("limit")
+
+    if limit is not None:
+        if isinstance(limit, bool) or not isinstance(
+            limit,
+            int,
+        ):
+            raise ValueError(
+                "'limit' must be an integer or null."
+            )
+
+        if limit <= 0:
+            raise ValueError(
+                "'limit' must be greater than zero."
+            )
 
     return QueryIntent(
         entity=data.get("entity"),
@@ -34,5 +113,5 @@ def parse_intent_response(response: str) -> QueryIntent:
         metric=data.get("metric"),
         aggregation=aggregation,
         sort_direction=sort_direction,
-        limit=data.get("limit"),
+        limit=limit,
     )

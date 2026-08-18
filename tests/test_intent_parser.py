@@ -1,5 +1,8 @@
+import pytest
+
 from app.intent.models import (
     Aggregation,
+    IntentFilter,
     QueryIntent,
     SortDirection,
 )
@@ -27,3 +30,171 @@ def test_parse_intent_response():
         sort_direction=SortDirection.DESC,
         limit=5,
     )
+
+
+def test_parse_intent_response_parses_filters():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [
+            {
+                "column": "customers.country",
+                "operator": "=",
+                "value": "India"
+            }
+        ],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    intent = parse_intent_response(response)
+
+    assert intent.filters == [
+        IntentFilter(
+            column="customers.country",
+            operator="=",
+            value="India",
+        )
+    ]
+
+
+def test_parse_intent_response_rejects_invalid_json():
+    with pytest.raises(
+        ValueError,
+        match="LLM response is not valid JSON",
+    ):
+        parse_intent_response(
+            '{"entity": "customers"'
+        )
+
+
+def test_parse_intent_response_requires_object():
+    with pytest.raises(
+        TypeError,
+        match="must be a JSON object",
+    ):
+        parse_intent_response(
+            '["customers"]'
+        )
+
+
+def test_parse_intent_response_rejects_invalid_aggregation():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [],
+        "metric": "order_items.quantity",
+        "aggregation": "banana",
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    with pytest.raises(
+        ValueError,
+        match="Unsupported aggregation",
+    ):
+        parse_intent_response(response)
+
+
+def test_parse_intent_response_rejects_invalid_sort_direction():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": "sideways",
+        "limit": null
+    }
+    """
+
+    with pytest.raises(
+        ValueError,
+        match="Unsupported sort direction",
+    ):
+        parse_intent_response(response)
+
+
+def test_parse_intent_response_rejects_invalid_filters():
+    response = """
+    {
+        "entity": "customers",
+        "filters": {},
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    with pytest.raises(
+        TypeError,
+        match="'filters' must be a list",
+    ):
+        parse_intent_response(response)
+
+
+def test_parse_intent_response_rejects_incomplete_filter():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [
+            {
+                "column": "customers.country",
+                "operator": "="
+            }
+        ],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    with pytest.raises(
+        ValueError,
+        match="missing required field 'value'",
+    ):
+        parse_intent_response(response)
+
+
+def test_parse_intent_response_rejects_invalid_limit():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": "5"
+    }
+    """
+
+    with pytest.raises(
+        ValueError,
+        match="'limit' must be an integer",
+    ):
+        parse_intent_response(response)
+
+
+def test_parse_intent_response_rejects_non_positive_limit():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": 0
+    }
+    """
+
+    with pytest.raises(
+        ValueError,
+        match="'limit' must be greater than zero",
+    ):
+        parse_intent_response(response)
