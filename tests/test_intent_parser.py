@@ -198,3 +198,138 @@ def test_parse_intent_response_rejects_non_positive_limit():
         match="'limit' must be greater than zero",
     ):
         parse_intent_response(response)
+
+
+def test_parse_intent_response_normalizes_eq_operator():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [
+            {
+                "column": "products.name",
+                "operator": "eq",
+                "value": "Laptop Pro 15"
+            }
+        ],
+        "metric": "order_items.quantity",
+        "aggregation": "sum",
+        "sort_direction": "desc",
+        "limit": null
+    }
+    """
+
+    intent = parse_intent_response(response)
+
+    assert intent.filters == [
+        IntentFilter(
+            column="products.name",
+            operator="=",
+            value="Laptop Pro 15",
+        )
+    ]
+
+
+def test_parse_intent_response_normalizes_comparison_operators():
+    operators = {
+        "neq": "!=",
+        "gt": ">",
+        "gte": ">=",
+        "lt": "<",
+        "lte": "<=",
+    }
+
+    for source, expected in operators.items():
+        response = f"""
+        {{
+            "entity": "customers",
+            "filters": [
+                {{
+                    "column": "customers.id",
+                    "operator": "{source}",
+                    "value": "5"
+                }}
+            ],
+            "metric": null,
+            "aggregation": null,
+            "sort_direction": null,
+            "limit": null
+        }}
+        """
+
+        intent = parse_intent_response(response)
+
+        assert intent.filters[0].operator == expected
+
+
+def test_parse_intent_response_normalizes_contains_to_like():
+    response = """
+    {
+        "entity": "products",
+        "filters": [
+            {
+                "column": "products.name",
+                "operator": "contains",
+                "value": "Laptop"
+            }
+        ],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    intent = parse_intent_response(response)
+
+    assert intent.filters[0].operator == "LIKE"
+
+
+def test_parse_intent_response_rejects_unsupported_operator():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [
+            {
+                "column": "customers.country",
+                "operator": "approximately",
+                "value": "India"
+            }
+        ],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    with pytest.raises(
+        ValueError,
+        match="Unsupported filter operator",
+    ):
+        parse_intent_response(response)
+
+
+def test_parse_intent_response_rejects_non_string_operator():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [
+            {
+                "column": "customers.country",
+                "operator": 123,
+                "value": "India"
+            }
+        ],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    with pytest.raises(
+        TypeError,
+        match="Filter operator must be a string",
+    ):
+        parse_intent_response(response)
+

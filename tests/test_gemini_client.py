@@ -13,15 +13,18 @@ class FakeModels:
     def __init__(self):
         self.model = None
         self.contents = None
+        self.config = None
 
     def generate_content(
         self,
         *,
         model: str,
         contents: str,
+        config,
     ) -> FakeResponse:
         self.model = model
         self.contents = contents
+        self.config = config
 
         return FakeResponse(
             '{"entity": "customers"}'
@@ -54,7 +57,10 @@ def test_gemini_client_uses_default_model(
         "Extract the database intent."
     )
 
-    assert result == '{"entity": "customers"}'
+    assert result == (
+        '{"entity": "customers"}'
+    )
+
     assert (
         fake_client.models.model
         == DEFAULT_GEMINI_MODEL
@@ -84,7 +90,10 @@ def test_gemini_client_sends_prompt(
 
     client.generate(prompt)
 
-    assert fake_client.models.contents == prompt
+    assert (
+        fake_client.models.contents
+        == prompt
+    )
 
 
 def test_gemini_client_supports_custom_model(
@@ -141,8 +150,16 @@ def test_gemini_client_rejects_empty_response(
 ):
     fake_client = FakeGenAIClient()
 
+    def empty_response(
+        *,
+        model: str,
+        contents: str,
+        config,
+    ) -> FakeResponse:
+        return FakeResponse(None)
+
     fake_client.models.generate_content = (
-        lambda *, model, contents: FakeResponse(None)
+        empty_response
     )
 
     monkeypatch.setenv(
@@ -168,3 +185,40 @@ def test_gemini_client_rejects_empty_response(
             "Expected RuntimeError for empty "
             "Gemini response."
         )
+
+
+def test_gemini_client_requests_structured_json(
+    monkeypatch,
+):
+    fake_client = FakeGenAIClient()
+
+    monkeypatch.setenv(
+        "GEMINI_API_KEY",
+        "test-key",
+    )
+
+    monkeypatch.setattr(
+        "app.llm.gemini.genai.Client",
+        lambda api_key: fake_client,
+    )
+
+    client = GeminiLLMClient()
+
+    client.generate(
+        "Extract database intent."
+    )
+
+    assert (
+        fake_client.models.config
+        is not None
+    )
+
+    assert (
+        fake_client.models.config.response_mime_type
+        == "application/json"
+    )
+
+    assert (
+        fake_client.models.config.response_schema
+        is not None
+    )

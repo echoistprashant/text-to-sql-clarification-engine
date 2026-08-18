@@ -7,8 +7,62 @@ from app.intent.models import (
     SortDirection,
 )
 
+_OPERATOR_ALIASES = {
+    "eq": "=",
+    "equals": "=",
+    "equal": "=",
+    "ne": "!=",
+    "neq": "!=",
+    "not_equal": "!=",
+    "not_equals": "!=",
+    "gt": ">",
+    "greater_than": ">",
+    "gte": ">=",
+    "greater_than_or_equal": ">=",
+    "lt": "<",
+    "less_than": "<",
+    "lte": "<=",
+    "less_than_or_equal": "<=",
+    "contains": "LIKE",
+    "like": "LIKE",
+}
 
-def _parse_filters(data: object) -> list[IntentFilter]:
+
+def _normalize_operator(
+    operator: object,
+) -> str:
+    if not isinstance(operator, str):
+        raise TypeError(
+            "Filter operator must be a string."
+        )
+
+    normalized = operator.strip().lower()
+
+    if normalized in _OPERATOR_ALIASES:
+        return _OPERATOR_ALIASES[normalized]
+
+    allowed_operators = {
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "LIKE",
+    }
+
+    if operator in allowed_operators:
+        return operator
+
+    raise ValueError(
+        f"Unsupported filter operator: "
+        f"{operator!r}."
+    )
+
+
+def _parse_filters(
+    data: object,
+) -> list[IntentFilter]:
     if data is None:
         return []
 
@@ -41,7 +95,9 @@ def _parse_filters(data: object) -> list[IntentFilter]:
         filters.append(
             IntentFilter(
                 column=item["column"],
-                operator=item["operator"],
+                operator=_normalize_operator(
+                    item["operator"]
+                ),
                 value=item["value"],
             )
         )
@@ -75,7 +131,8 @@ def parse_intent_response(
             aggregation = Aggregation(aggregation)
         except ValueError as exc:
             raise ValueError(
-                f"Unsupported aggregation: {aggregation!r}."
+                f"Unsupported aggregation: "
+                f"{aggregation!r}."
             ) from exc
 
     sort_direction = data.get("sort_direction")

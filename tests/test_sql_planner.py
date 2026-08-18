@@ -8,6 +8,7 @@ from app.intent.models import (
     SortDirection,
 )
 from app.schema.retrieval import retrieve_schema
+from app.sql.models import SQLFilter
 from app.sql.planner import plan_sql_query
 
 
@@ -136,6 +137,105 @@ def test_planner_converts_intent_filters():
         schema,
         intent,
         schema_result,
+    )
+
+    assert any(
+        item.table == "customers"
+        and item.column == "country"
+        and item.operator == "="
+        and item.value == "India"
+        for item in query.filters
+    )
+
+
+def test_planner_deduplicates_intent_and_value_match_filters():
+    schema = get_schema()
+
+    schema_result = retrieve_schema(
+        schema,
+        "Which customers bought the most laptops?",
+        max_hops=3,
+    )
+
+    intent = QueryIntent(
+        entity="customers",
+        filters=[
+            IntentFilter(
+                column="products.name",
+                operator="=",
+                value="Laptop Pro 15",
+            ),
+        ],
+        metric="order_items.quantity",
+        aggregation=Aggregation.SUM,
+        sort_direction=SortDirection.DESC,
+    )
+
+    query = plan_sql_query(
+        schema,
+        intent,
+        schema_result,
+    )
+
+    matching_filters = [
+        item
+        for item in query.filters
+        if item.table == "products"
+        and item.column == "name"
+        and item.operator == "="
+        and item.value == "Laptop Pro 15"
+    ]
+
+    assert matching_filters == [
+        SQLFilter(
+            table="products",
+            column="name",
+            operator="=",
+            value="Laptop Pro 15",
+        ),
+    ]
+
+
+def test_planner_preserves_distinct_filters():
+    schema = get_schema()
+
+    schema_result = retrieve_schema(
+        schema,
+        "Which customers bought the most laptops?",
+        max_hops=3,
+    )
+
+    intent = QueryIntent(
+        entity="customers",
+        filters=[
+            IntentFilter(
+                column="products.name",
+                operator="=",
+                value="Laptop Pro 15",
+            ),
+            IntentFilter(
+                column="customers.country",
+                operator="=",
+                value="India",
+            ),
+        ],
+        metric="order_items.quantity",
+        aggregation=Aggregation.SUM,
+        sort_direction=SortDirection.DESC,
+    )
+
+    query = plan_sql_query(
+        schema,
+        intent,
+        schema_result,
+    )
+
+    assert any(
+        item.table == "products"
+        and item.column == "name"
+        and item.operator == "="
+        and item.value == "Laptop Pro 15"
+        for item in query.filters
     )
 
     assert any(

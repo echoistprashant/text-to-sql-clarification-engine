@@ -1,5 +1,8 @@
 from app.intent.models import QueryIntent
-from app.schema.models import DatabaseSchema, SchemaRetrievalResult
+from app.schema.models import (
+    DatabaseSchema,
+    SchemaRetrievalResult,
+)
 from app.sql.joins import build_joins
 from app.sql.models import (
     SQLAggregation,
@@ -98,6 +101,7 @@ def _build_filters(
     value_matches,
 ) -> list[SQLFilter]:
     filters: list[SQLFilter] = []
+    seen: set[tuple[str, str, str, str]] = set()
 
     for item in intent.filters:
         table_name, column_name = _split_qualified_column(
@@ -109,6 +113,18 @@ def _build_filters(
             table_name,
             column_name,
         )
+
+        filter_key = (
+            table_name,
+            column_name,
+            item.operator,
+            item.value,
+        )
+
+        if filter_key in seen:
+            continue
+
+        seen.add(filter_key)
 
         filters.append(
             SQLFilter(
@@ -125,6 +141,18 @@ def _build_filters(
             match.table_name,
             match.column_name,
         )
+
+        filter_key = (
+            match.table_name,
+            match.column_name,
+            "=",
+            match.value,
+        )
+
+        if filter_key in seen:
+            continue
+
+        seen.add(filter_key)
 
         filters.append(
             SQLFilter(

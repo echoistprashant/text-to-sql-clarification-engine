@@ -1,6 +1,9 @@
 import os
 
 from google import genai
+from google.genai import types
+
+from app.llm.schemas import INTENT_RESPONSE_SCHEMA
 
 DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite"
 
@@ -27,6 +30,10 @@ class GeminiLLMClient:
         response = self._client.models.generate_content(
             model=self._model,
             contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=INTENT_RESPONSE_SCHEMA,
+            ),
         )
 
         if not response.text:
