@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: text-to-sql-clarification-engine
+Version: 0.1.0
+Summary: Production-oriented Text-to-SQL system with a Clarification Engineer
+Requires-Python: <3.13,>=3.12
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: psycopg[binary]>=3.2
+Requires-Dist: python-dotenv>=1.0
+Requires-Dist: fastapi>=0.141.1
