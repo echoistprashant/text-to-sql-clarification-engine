@@ -1,6 +1,9 @@
 from app.schema.graph import build_schema_graph
 from app.schema.join_path import select_join_path
-from app.schema.models import DatabaseSchema, SchemaRetrievalResult
+from app.schema.models import (
+    DatabaseSchema,
+    SchemaRetrievalResult,
+)
 from app.schema.profiler import profile_column_values
 from app.schema.ranker import rank_tables
 from app.schema.retriever import retrieve_tables
@@ -26,7 +29,12 @@ def retrieve_schema(
 
     value_matches = []
 
-    for table in tables:
+    tables_to_profile = tables
+
+    if not tables_to_profile:
+        tables_to_profile = schema.tables
+
+    for table in tables_to_profile:
         for column in table.columns:
             data_type = column.data_type.upper()
 
