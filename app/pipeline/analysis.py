@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from app.intent.extractor import extract_intent
+from app.intent.safety import validate_read_only_request
 from app.intent.state import ClarificationState
 from app.intent.workflow import (
     answer_clarification,
@@ -28,6 +29,10 @@ def analyze_question(
     llm_client: LLMClient,
     max_hops: int = 2,
 ) -> AnalysisResult:
+    validate_read_only_request(
+        question,
+    )
+
     schema_result = retrieve_schema(
         schema,
         question,

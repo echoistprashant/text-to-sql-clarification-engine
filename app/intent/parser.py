@@ -9,6 +9,7 @@ from app.intent.models import (
 
 _OPERATOR_ALIASES = {
     "eq": "=",
+    "==": "=",
     "equals": "=",
     "equal": "=",
     "ne": "!=",

@@ -46,7 +46,17 @@ def run_case(
             parameters=result.parameters,
         )
 
-    except Exception as exc:    # noqa: BLE001
+    except ValueError as exc:
+        if case.expected_resolved is False:
+            return EvaluationResult(
+                case=case,
+                resolved=False,
+                passed=True,
+                sql=None,
+                parameters=None,
+                error=f"{type(exc).__name__}: {exc}",
+            )
+
         return EvaluationResult(
             case=case,
             resolved=False,

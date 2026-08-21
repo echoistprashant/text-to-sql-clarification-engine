@@ -78,6 +78,45 @@ Rules:
 12. For every filter, verify that the table.column combination
     actually exists in the provided schema before returning it.
 
+13. Ranking language such as "most", "least", "highest",
+    "lowest", "top", "best", or "worst" does NOT by itself
+    identify a metric.
+
+    If the question asks for a ranking but does not explicitly
+    specify what is being measured, return:
+
+    "metric": null
+
+    and preserve the requested sort direction.
+
+    Examples:
+
+    "Which customers bought the most laptops?"
+      -> metric: null
+      -> aggregation: null
+      -> sort_direction: "desc"
+
+    "Which customers placed the most orders?"
+      -> metric: null
+      -> aggregation: null
+      -> sort_direction: "desc"
+
+    "Which customers spent the most?"
+      -> metric: null
+      -> aggregation: null
+      -> sort_direction: "desc"
+
+    "Which products sold the most?"
+      -> metric: null
+      -> aggregation: null
+      -> sort_direction: "desc"
+
+14. Do not infer a metric merely from the verb used in the
+    question. "bought", "placed", "spent", and "sold" are
+    not sufficient to select a metric.    
+
+
+
 DATABASE CONTEXT:
 {schema_context}
 

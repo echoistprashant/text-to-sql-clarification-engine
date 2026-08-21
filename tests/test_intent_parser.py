@@ -333,3 +333,30 @@ def test_parse_intent_response_rejects_non_string_operator():
     ):
         parse_intent_response(response)
 
+def test_parse_intent_response_normalizes_double_equals_operator():
+    response = """
+    {
+        "entity": "customers",
+        "filters": [
+            {
+                "column": "customers.country",
+                "operator": "==",
+                "value": "Wakanda"
+            }
+        ],
+        "metric": null,
+        "aggregation": null,
+        "sort_direction": null,
+        "limit": null
+    }
+    """
+
+    intent = parse_intent_response(response)
+
+    assert intent.filters == [
+        IntentFilter(
+            column="customers.country",
+            operator="=",
+            value="Wakanda",
+        )
+    ]
