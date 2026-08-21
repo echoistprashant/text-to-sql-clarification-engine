@@ -1,11 +1,20 @@
+from unittest.mock import Mock, patch
+
+import pytest
+from google.genai import errors
+
 from app.llm.gemini import (
     DEFAULT_GEMINI_MODEL,
+    MAX_RETRIES,
     GeminiLLMClient,
 )
 
 
 class FakeResponse:
-    def __init__(self, text: str | None):
+    def __init__(
+        self,
+        text: str | None,
+    ):
         self.text = text
 
 
@@ -131,18 +140,14 @@ def test_gemini_client_requires_api_key(
         raising=False,
     )
 
-    try:
-        GeminiLLMClient()
-    except RuntimeError as exc:
-        assert str(exc) == (
+    with pytest.raises(
+        RuntimeError,
+        match=(
             "GEMINI_API_KEY environment variable "
             "is not set."
-        )
-    else:
-        raise AssertionError(
-            "Expected RuntimeError when "
-            "GEMINI_API_KEY is missing."
-        )
+        ),
+    ):
+        GeminiLLMClient()
 
 
 def test_gemini_client_rejects_empty_response(
@@ -174,17 +179,11 @@ def test_gemini_client_rejects_empty_response(
 
     client = GeminiLLMClient()
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="Gemini returned an empty response.",
+    ):
         client.generate("test")
-    except RuntimeError as exc:
-        assert str(exc) == (
-            "Gemini returned an empty response."
-        )
-    else:
-        raise AssertionError(
-            "Expected RuntimeError for empty "
-            "Gemini response."
-        )
 
 
 def test_gemini_client_requests_structured_json(
@@ -222,3 +221,195 @@ def test_gemini_client_requests_structured_json(
         fake_client.models.config.response_schema
         is not None
     )
+
+
+def _server_error() -> errors.ServerError:
+    return errors.ServerError(
+        503,
+        {
+            "error": {
+                "code": 503,
+                "message": "Service unavailable",
+                "status": "UNAVAILABLE",
+            }
+        },
+    )
+
+
+def test_gemini_client_retries_server_error_then_succeeds(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "GEMINI_API_KEY",
+        "test-key",
+    )
+
+    fake_client = FakeGenAIClient()
+
+    response = FakeResponse(
+        '{"entity": "customers"}'
+    )
+
+    fake_client.models.generate_content = Mock(
+        side_effect=[
+            _server_error(),
+            response,
+        ]
+    )
+
+    monkeypatch.setattr(
+        "app.llm.gemini.genai.Client",
+        lambda api_key: fake_client,
+    )
+
+    client = GeminiLLMClient()
+
+    with patch(
+        "app.llm.gemini.time.sleep"
+    ) as sleep:
+        result = client.generate(
+            "Show all customers"
+        )
+
+    assert result == (
+        '{"entity": "customers"}'
+    )
+
+    assert (
+        fake_client.models.generate_content.call_count
+        == 2
+    )
+
+    sleep.assert_called_once_with(1.0)
+
+
+def test_gemini_client_retries_server_errors_with_backoff(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "GEMINI_API_KEY",
+        "test-key",
+    )
+
+    fake_client = FakeGenAIClient()
+
+    response = FakeResponse(
+        '{"entity": "customers"}'
+    )
+
+    fake_client.models.generate_content = Mock(
+        side_effect=[
+            _server_error(),
+            _server_error(),
+            response,
+        ]
+    )
+
+    monkeypatch.setattr(
+        "app.llm.gemini.genai.Client",
+        lambda api_key: fake_client,
+    )
+
+    client = GeminiLLMClient()
+
+    with patch(
+        "app.llm.gemini.time.sleep"
+    ) as sleep:
+        result = client.generate(
+            "Show all customers"
+        )
+
+    assert result == (
+        '{"entity": "customers"}'
+    )
+
+    assert (
+        fake_client.models.generate_content.call_count
+        == 3
+    )
+
+    assert sleep.call_args_list == [
+        ((1.0,),),
+        ((2.0,),),
+    ]
+
+
+def test_gemini_client_stops_after_max_retries(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "GEMINI_API_KEY",
+        "test-key",
+    )
+
+    fake_client = FakeGenAIClient()
+
+    fake_client.models.generate_content = Mock(
+        side_effect=_server_error()
+    )
+
+    monkeypatch.setattr(
+        "app.llm.gemini.genai.Client",
+        lambda api_key: fake_client,
+    )
+
+    client = GeminiLLMClient()
+
+    with patch(
+        "app.llm.gemini.time.sleep"
+    ) as sleep, pytest.raises(
+        errors.ServerError
+    ):
+        client.generate(
+            "Show all customers"
+        )
+
+    assert (
+        fake_client.models.generate_content.call_count
+        == MAX_RETRIES + 1
+    )
+
+    assert sleep.call_count == MAX_RETRIES
+
+
+def test_gemini_client_does_not_retry_non_server_error(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "GEMINI_API_KEY",
+        "test-key",
+    )
+
+    fake_client = FakeGenAIClient()
+
+    error = RuntimeError(
+        "Permanent failure"
+    )
+
+    fake_client.models.generate_content = Mock(
+        side_effect=error
+    )
+
+    monkeypatch.setattr(
+        "app.llm.gemini.genai.Client",
+        lambda api_key: fake_client,
+    )
+
+    client = GeminiLLMClient()
+
+    with patch(
+        "app.llm.gemini.time.sleep"
+    ) as sleep, pytest.raises(
+        RuntimeError,
+        match="Permanent failure",
+    ):
+        client.generate(
+            "Show all customers"
+        )
+
+    assert (
+        fake_client.models.generate_content.call_count
+        == 1
+    )
+
+    sleep.assert_not_called()
