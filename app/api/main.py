@@ -1,6 +1,7 @@
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.db.schema_inspector import get_schema
@@ -88,6 +89,76 @@ class ExecuteResponse(BaseModel):
     sql: str | None = None
     parameters: dict[str, str] | None = None
     execution: ExecutionResponse | None = None
+
+
+class APIErrorResponse(BaseModel):
+    error: dict[str, str]
+
+
+def _error_response(
+    status_code: int,
+    code: str,
+    message: str,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": {
+                "code": code,
+                "message": message,
+            }
+        },
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(
+    request: Request,
+    exc: ValueError,
+) -> JSONResponse:
+    message = str(exc)
+
+    if (
+        "read-only database questions" in message
+        or "Forbidden SQL operation" in message
+        or "Only SELECT statements" in message
+    ):
+        return _error_response(
+            status_code=400,
+            code="UNSUPPORTED_OPERATION",
+            message=message,
+        )
+
+    if (
+        "Cannot execute SQL" in message
+        or "Cannot build SQL" in message
+        or "SQL query" in message
+        or "Expected a qualified column name" in message
+        or "Unsupported filter operator" in message
+    ):
+        return _error_response(
+            status_code=400,
+            code="INVALID_QUERY",
+            message=message,
+        )
+
+    return _error_response(
+        status_code=400,
+        code="INVALID_REQUEST",
+        message=message,
+    )
+
+
+@app.exception_handler(Exception)
+async def unexpected_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    return _error_response(
+        status_code=500,
+        code="INTERNAL_ERROR",
+        message="An unexpected internal error occurred.",
+    )
 
 
 def get_database_schema() -> DatabaseSchema:
@@ -195,6 +266,22 @@ def _store_analysis(
     return analysis_id
 
 
+def _get_analysis(
+    analysis_id: str,
+) -> SQLAnalysisResult:
+    result = _analysis_store.get(
+        analysis_id,
+    )
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Analysis not found.",
+        )
+
+    return result
+
+
 @app.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
@@ -241,15 +328,9 @@ def analyze_clarification(
         get_database_schema,
     ),
 ) -> AnalyzeResponse:
-    result = _analysis_store.get(
+    result = _get_analysis(
         request.analysis_id,
     )
-
-    if result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Analysis not found.",
-        )
 
     updated_result = answer_sql_clarification(
         result,
@@ -324,15 +405,9 @@ def execute_clarification(
         get_database_schema,
     ),
 ) -> ExecuteResponse | AnalyzeResponse:
-    result = _analysis_store.get(
+    result = _get_analysis(
         request.analysis_id,
     )
-
-    if result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Analysis not found.",
-        )
 
     updated_result = answer_sql_clarification(
         result,
