@@ -28,6 +28,33 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Text-to-SQL Clarification Engine",
     version="0.1.0",
+    description=(
+        "Production-oriented Text-to-SQL API that analyzes "
+        "natural-language database questions, detects ambiguity, "
+        "resolves clarifications, generates safe read-only SQL, "
+        "and executes validated queries."
+    ),
+    openapi_tags=[
+        {
+            "name": "system",
+            "description": (
+                "Application health and readiness endpoints."
+            ),
+        },
+        {
+            "name": "analysis",
+            "description": (
+                "Natural-language question analysis and "
+                "clarification endpoints."
+            ),
+        },
+        {
+            "name": "execution",
+            "description": (
+                "SQL execution and clarification endpoints."
+            ),
+        },
+    ],
 )
 
 
@@ -38,6 +65,9 @@ class AnalyzeRequest(BaseModel):
     question: str = Field(
         min_length=1,
         description="Natural-language database question.",
+        examples=[
+            "How many customers are from India?",
+        ],
     )
 
 
@@ -49,6 +79,9 @@ class ClarificationAnswerRequest(BaseModel):
     answer: str = Field(
         min_length=1,
         description="Answer to the clarification question.",
+        examples=[
+            "Use total order value.",
+        ],
     )
 
 
@@ -451,12 +484,37 @@ def _get_analysis(
     return result
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["system"],
+    summary="Health check",
+    description=(
+        "Returns a lightweight liveness response without "
+        "checking external dependencies."
+    ),
+)
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/ready")
+@app.get(
+    "/ready",
+    tags=["system"],
+    summary="Readiness check",
+    description=(
+        "Checks whether required configuration is available "
+        "and the database connection is reachable."
+    ),
+    responses={
+        503: {
+            "model": APIErrorResponse,
+            "description": (
+                "Required configuration or database "
+                "connection is unavailable."
+            ),
+        },
+    },
+)
 def readiness_check() -> dict[str, str]:
     settings = get_settings()
 
@@ -485,9 +543,32 @@ def readiness_check() -> dict[str, str]:
 
     return {"status": "ready"}
 
+
 @app.post(
     "/analyze",
     response_model=AnalyzeResponse,
+    tags=["analysis"],
+    summary="Analyze a database question",
+    description=(
+        "Analyzes a natural-language database question, "
+        "detects ambiguity, generates a clarification when "
+        "necessary, and produces read-only SQL when the "
+        "intent is sufficiently resolved."
+    ),
+    responses={
+        400: {
+            "model": APIErrorResponse,
+            "description": "Invalid or unsupported database query.",
+        },
+        422: {
+            "model": APIErrorResponse,
+            "description": "Request validation failed.",
+        },
+        500: {
+            "model": APIErrorResponse,
+            "description": "Unexpected internal server error.",
+        },
+    },
 )
 def analyze(
     request: AnalyzeRequest,
@@ -519,6 +600,31 @@ def analyze(
 @app.post(
     "/analyze/clarification",
     response_model=AnalyzeResponse,
+    tags=["analysis"],
+    summary="Resolve an analysis clarification",
+    description=(
+        "Applies a user's clarification answer to a previously "
+        "unresolved analysis. The analysis remains stored if "
+        "additional clarification is required."
+    ),
+    responses={
+        400: {
+            "model": APIErrorResponse,
+            "description": "Invalid clarification answer.",
+        },
+        404: {
+            "model": APIErrorResponse,
+            "description": "Analysis ID was not found.",
+        },
+        422: {
+            "model": APIErrorResponse,
+            "description": "Request validation failed.",
+        },
+        500: {
+            "model": APIErrorResponse,
+            "description": "Unexpected internal server error.",
+        },
+    },
 )
 def analyze_clarification(
     request: ClarificationAnswerRequest,
@@ -559,6 +665,28 @@ def analyze_clarification(
 @app.post(
     "/execute",
     response_model=ExecuteResponse | AnalyzeResponse,
+    tags=["execution"],
+    summary="Analyze and execute a database question",
+    description=(
+        "Analyzes a natural-language database question and "
+        "executes the generated read-only SQL when the intent "
+        "is resolved. Returns a clarification response when "
+        "additional information is required."
+    ),
+    responses={
+        400: {
+            "model": APIErrorResponse,
+            "description": "Invalid or unsupported database query.",
+        },
+        422: {
+            "model": APIErrorResponse,
+            "description": "Request validation failed.",
+        },
+        500: {
+            "model": APIErrorResponse,
+            "description": "Unexpected internal server error.",
+        },
+    },
 )
 def execute(
     request: AnalyzeRequest,
@@ -596,6 +724,31 @@ def execute(
 @app.post(
     "/execute/clarification",
     response_model=ExecuteResponse | AnalyzeResponse,
+    tags=["execution"],
+    summary="Resolve clarification and execute SQL",
+    description=(
+        "Applies a clarification answer to a previously "
+        "unresolved analysis and executes the resulting "
+        "read-only SQL when the intent becomes resolved."
+    ),
+    responses={
+        400: {
+            "model": APIErrorResponse,
+            "description": "Invalid clarification or query.",
+        },
+        404: {
+            "model": APIErrorResponse,
+            "description": "Analysis ID was not found.",
+        },
+        422: {
+            "model": APIErrorResponse,
+            "description": "Request validation failed.",
+        },
+        500: {
+            "model": APIErrorResponse,
+            "description": "Unexpected internal server error.",
+        },
+    },
 )
 def execute_clarification(
     request: ClarificationAnswerRequest,

@@ -1,4 +1,8 @@
 from app.intent.models import QueryIntent
+from app.schema.graph import (
+    build_schema_graph,
+    shortest_path,
+)
 from app.schema.models import (
     DatabaseSchema,
     SchemaRetrievalResult,
@@ -166,6 +170,130 @@ def _build_filters(
     return filters
 
 
+def _collect_required_tables(
+    intent: QueryIntent,
+    schema_result: SchemaRetrievalResult,
+) -> set[str]:
+    required_tables = {
+        intent.entity,
+    }
+
+    for item in intent.filters:
+        table_name, _ = _split_qualified_column(
+            item.column
+        )
+        required_tables.add(table_name)
+
+    if intent.metric is not None:
+        metric_table, _ = _split_qualified_column(
+            intent.metric
+        )
+        required_tables.add(metric_table)
+
+    for match in schema_result.value_matches:
+        required_tables.add(
+            match.table_name
+        )
+
+    return required_tables
+
+
+def _build_join_path(
+    schema: DatabaseSchema,
+    intent: QueryIntent,
+    schema_result: SchemaRetrievalResult,
+) -> list[str]:
+    if not schema_result.join_path:
+        raise ValueError(
+            "Schema retrieval result must contain a join path."
+        )
+
+    required_tables = _collect_required_tables(
+        intent,
+        schema_result,
+    )
+
+    existing_path = list(
+        schema_result.join_path
+    )
+
+    if required_tables.issubset(
+        set(existing_path)
+    ):
+        if intent.entity in existing_path:
+            entity_index = existing_path.index(
+                intent.entity
+            )
+
+            if entity_index == 0:
+                return existing_path
+
+        graph = build_schema_graph(
+            schema
+        )
+
+        rebuilt_path = [intent.entity]
+
+        for required_table in sorted(
+            required_tables
+        ):
+            if required_table == intent.entity:
+                continue
+
+            path = shortest_path(
+                graph,
+                intent.entity,
+                required_table,
+            )
+
+            if path is None:
+                raise ValueError(
+                    "No join path exists between "
+                    "the tables required by the query."
+                )
+
+            for table_name in path[1:]:
+                if table_name not in rebuilt_path:
+                    rebuilt_path.append(
+                        table_name
+                    )
+
+        return rebuilt_path
+
+    graph = build_schema_graph(
+        schema
+    )
+
+    combined_path = [intent.entity]
+
+    for required_table in sorted(
+        required_tables
+    ):
+        if required_table == intent.entity:
+            continue
+
+        path = shortest_path(
+            graph,
+            intent.entity,
+            required_table,
+        )
+
+        if path is None:
+            raise ValueError(
+                "No join path exists between "
+                f"'{intent.entity}' and "
+                f"'{required_table}'."
+            )
+
+        for table_name in path[1:]:
+            if table_name not in combined_path:
+                combined_path.append(
+                    table_name
+                )
+
+    return combined_path
+
+
 def plan_sql_query(
     schema: DatabaseSchema,
     intent: QueryIntent,
@@ -181,28 +309,19 @@ def plan_sql_query(
         intent.entity,
     )
 
-    if not schema_result.join_path:
-        raise ValueError(
-            "Schema retrieval result must contain a join path."
-        )
-
-    display_column = _find_display_column(
+    join_path = _build_join_path(
         schema,
-        intent.entity,
+        intent,
+        schema_result,
     )
-
-    select_columns = [
-        SQLColumn(
-            table=intent.entity,
-            column=display_column,
-        )
-    ]
 
     aggregations: list[SQLAggregation] = []
 
     if intent.metric is not None:
         metric_table, metric_column = (
-            _split_qualified_column(intent.metric)
+            _split_qualified_column(
+                intent.metric
+            )
         )
 
         _find_column(
@@ -225,9 +344,38 @@ def plan_sql_query(
             )
         )
 
+    is_standalone_aggregation = (
+        bool(aggregations)
+        and intent.sort_direction is None
+        and intent.entity == "order_items"
+    )
+
+    if is_standalone_aggregation:
+        select_columns: list[SQLColumn] = []
+        group_by: list[SQLColumn] = []
+    else:
+        display_column = _find_display_column(
+            schema,
+            intent.entity,
+        )
+
+        select_columns = [
+            SQLColumn(
+                table=intent.entity,
+                column=display_column,
+            )
+        ]
+
+        group_by = [
+            SQLColumn(
+                table=intent.entity,
+                column=display_column,
+            )
+        ]
+
     joins = build_joins(
         schema,
-        schema_result.join_path,
+        join_path,
     )
 
     filters = _build_filters(
@@ -235,13 +383,6 @@ def plan_sql_query(
         intent,
         schema_result.value_matches,
     )
-
-    group_by = [
-        SQLColumn(
-            table=intent.entity,
-            column=display_column,
-        )
-    ]
 
     order_by: list[SQLOrder] = []
 

@@ -270,10 +270,10 @@ def validate_sql_query(
     schema: DatabaseSchema,
     query: SQLQuery,
 ) -> None:
-    if not query.select_columns:
+    if not query.select_columns and not query.aggregations:
         raise ValueError(
             "SQL query must contain at least one "
-            "SELECT column."
+            "SELECT expression."
         )
 
     _validate_tables(

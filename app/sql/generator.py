@@ -41,13 +41,14 @@ def compile_sql(query: SQLQuery) -> CompiledSQL:
         "SELECT " + ", ".join(select_items)
     )
 
-    if not query.select_columns:
+    if query.select_columns:
+        from_table = query.select_columns[0].table
+    elif query.aggregations:
+        from_table = query.aggregations[0].table
+    else:
         raise ValueError(
-            "SQL query must contain at least one "
-            "selected column."
+            "SQL query must contain a FROM source."
         )
-
-    from_table = query.select_columns[0].table
 
     parts.append(
         f"FROM {from_table}"

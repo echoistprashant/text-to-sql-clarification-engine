@@ -76,3 +76,85 @@ def test_extract_intent_sends_schema_context_to_llm():
     assert "DATABASE CONTEXT:" in client.prompts[0]
     assert "TABLE customers" in client.prompts[0]
     assert "customers.name" not in client.prompts[0]
+
+class SalesFakeLLMClient:
+    def __init__(self):
+        self.prompts: list[str] = []
+
+    def generate(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+
+        return """
+        {
+            "entity": "order_items",
+            "filters": [
+                {
+                    "column": "products.name",
+                    "operator": "=",
+                    "value": "laptop"
+                }
+            ],
+            "metric": "order_items.quantity",
+            "aggregation": "sum",
+            "sort_direction": null,
+            "limit": null
+        }
+        """
+
+
+def test_extract_intent_for_laptop_sales_uses_quantity_metric():
+    client = SalesFakeLLMClient()
+
+    intent = extract_intent(
+        "How many laptops were sold?",
+        """
+        TABLE products
+        COLUMNS:
+        - id INTEGER
+        - name VARCHAR
+
+        TABLE order_items
+        COLUMNS:
+        - id INTEGER
+        - product_id INTEGER
+        - quantity INTEGER
+        """,
+        client,
+    )
+
+    assert intent.entity == "order_items"
+    assert intent.metric == "order_items.quantity"
+    assert intent.aggregation.value == "sum"
+    assert len(intent.filters) == 1
+    assert intent.filters[0].column == "products.name"
+    assert intent.filters[0].value == "laptop"    
+
+
+def test_extract_intent_prompt_defines_sales_quantity_rule():
+    client = FakeLLMClient()
+
+    extract_intent(
+        "How many laptops were sold?",
+        """
+        TABLE products
+        COLUMNS:
+        - id INTEGER
+        - name VARCHAR
+
+        TABLE order_items
+        COLUMNS:
+        - id INTEGER
+        - product_id INTEGER
+        - quantity INTEGER
+        """,
+        client,
+    )
+
+    assert len(client.prompts) == 1
+
+    prompt = client.prompts[0]
+
+    assert "order_items.quantity" in prompt
+    assert "How many <products> were sold?" in prompt
+    assert "aggregation: \"sum\"" in prompt
+    assert "COUNT(products.id)" in prompt    

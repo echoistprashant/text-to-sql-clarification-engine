@@ -8,7 +8,10 @@ from app.intent.models import (
     SortDirection,
 )
 from app.schema.retrieval import retrieve_schema
-from app.sql.models import SQLFilter
+from app.sql.models import (
+    SQLAggregation,
+    SQLFilter,
+)
 from app.sql.planner import plan_sql_query
 
 
@@ -429,3 +432,44 @@ def test_planner_rejects_missing_join_path():
             intent,
             schema_result,
         )
+
+def test_planner_does_not_group_standalone_aggregation():
+    schema = get_schema()
+
+    schema_result = retrieve_schema(
+        schema,
+        "How many laptops were sold?",
+        max_hops=3,
+    )
+
+    intent = QueryIntent(
+        entity="order_items",
+        filters=[
+            IntentFilter(
+                column="products.name",
+                operator="LIKE",
+                value="%Laptop%",
+            ),
+        ],
+        metric="order_items.quantity",
+        aggregation=Aggregation.SUM,
+    )
+
+    query = plan_sql_query(
+        schema,
+        intent,
+        schema_result,
+    )
+
+    assert query.select_columns == []
+
+    assert len(query.aggregations) == 1
+
+    assert query.aggregations[0] == SQLAggregation(
+        function="SUM",
+        table="order_items",
+        column="quantity",
+        alias="metric_value",
+    )
+
+    assert query.group_by == []

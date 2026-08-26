@@ -111,11 +111,79 @@ Rules:
       -> aggregation: null
       -> sort_direction: "desc"
 
-14. Do not infer a metric merely from the verb used in the
-    question. "bought", "placed", "spent", and "sold" are
-    not sufficient to select a metric.    
+14. For explicit quantity questions about products, units, items,
+    sales, purchases, or orders, use a quantity metric when the
+    schema provides "order_items.quantity".
 
+    In particular, when the question asks:
 
+    "How many <products> were sold?"
+    "How many <products> were purchased?"
+    "How many units were sold?"
+    "How many items were sold?"
+    "How many units of <product> were purchased?"
+
+    and "order_items.quantity" exists in the provided schema:
+
+      -> metric: "order_items.quantity"
+      -> aggregation: "sum"
+
+    Do NOT interpret these questions as COUNT(products.id),
+    because counting product rows does not represent the number
+    of units sold or purchased.
+
+    Example:
+
+    "How many laptops were sold?"
+      -> metric: "order_items.quantity"
+      -> aggregation: "sum"
+
+15. When a product name or product category is mentioned in a
+    sales or purchase question, use the provided product schema
+    values to identify the appropriate product filter.
+
+    For example, if the schema contains:
+
+    products.name = "Laptop Pro 15"
+
+    and the question is:
+
+    "How many laptops were sold?"
+
+    the intent may use:
+
+      entity: "order_items"
+      metric: "order_items.quantity"
+      aggregation: "sum"
+
+    with a filter referring to the product name when the schema
+    context provides a reliable match.
+
+16. Do not infer an arbitrary metric merely from a verb.
+
+    However, explicit quantity language combined with a sales,
+    purchase, or order context is sufficient to select
+    "order_items.quantity" when that column exists.
+
+17. For ranking questions, continue to require clarification
+    when the metric is genuinely unspecified.
+
+    Do NOT apply the quantity rule from rule 14 to ranking
+    questions such as:
+
+    "Which customers bought the most laptops?"
+
+    That question should remain:
+
+      -> metric: null
+      -> aggregation: null
+      -> sort_direction: "desc"
+
+    because "most" does not specify whether the ranking should
+    be based on units, orders, or spending.
+
+18. Never return a metric or filter column that does not exist
+    in the provided database schema.
 
 DATABASE CONTEXT:
 {schema_context}
