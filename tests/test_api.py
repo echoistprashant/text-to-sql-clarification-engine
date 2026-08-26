@@ -328,11 +328,11 @@ def test_analyze_clarification_rejects_unknown_analysis():
     assert response.status_code == 404
 
     assert response.json() == {
-    "error": {
-        "code": "NOT_FOUND",
-        "message": "Analysis not found.",
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
     }
-}
 
 
 def test_execute_returns_clarification_when_unresolved():
@@ -499,11 +499,11 @@ def test_execute_clarification_rejects_unknown_analysis():
     assert response.status_code == 404
 
     assert response.json() == {
-    "error": {
-        "code": "NOT_FOUND",
-        "message": "Analysis not found.",
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
     }
-}
 
 
 def test_analyze_validation_error_uses_api_error_format():
@@ -596,14 +596,17 @@ def test_destructive_request_uses_unsupported_operation_error():
 
     assert body["error"]["message"] == (
         "Only read-only database questions are supported."
-    )    
+    )
 
 
 def test_unresolved_analysis_is_stored():
     response = client.post(
         "/analyze",
         json={
-            "question": "Which customers bought the most laptops?"
+            "question": (
+                "Which customers bought "
+                "the most laptops?"
+            ),
         },
     )
 
@@ -620,7 +623,7 @@ def test_resolved_analysis_does_not_create_analysis_id():
     response = client.post(
         "/analyze",
         json={
-            "question": "Show customers from India"
+            "question": "Show customers from India",
         },
     )
 
@@ -636,7 +639,10 @@ def test_analyze_clarification_removes_resolved_analysis():
     response = client.post(
         "/analyze",
         json={
-            "question": "Which customers bought the most laptops?"
+            "question": (
+                "Which customers bought "
+                "the most laptops?"
+            ),
         },
     )
 
@@ -683,7 +689,10 @@ def test_execute_clarification_removes_resolved_analysis():
     response = client.post(
         "/execute",
         json={
-            "question": "Which customers bought the most laptops?"
+            "question": (
+                "Which customers bought "
+                "the most laptops?"
+            ),
         },
     )
 
@@ -723,7 +732,8 @@ def test_execute_clarification_removes_resolved_analysis():
             "code": "NOT_FOUND",
             "message": "Analysis not found.",
         }
-    }    
+    }
+
 
 def test_health_check_returns_ok():
     response = client.get("/health")
@@ -802,7 +812,8 @@ def test_unknown_analysis_contains_request_id():
             "code": "NOT_FOUND",
             "message": "Analysis not found.",
         }
-    }    
+    }
+
 
 def test_readiness_check_returns_ready():
     settings = Settings(
@@ -815,6 +826,7 @@ def test_readiness_check_returns_ready():
         gemini_model="test-model",
         gemini_max_retries=3,
         gemini_initial_retry_delay_seconds=1.0,
+        gemini_timeout_seconds=30.0,
     )
 
     with (
@@ -823,7 +835,7 @@ def test_readiness_check_returns_ready():
             return_value=settings,
         ),
         patch(
-            "app.api.main.check_database_connection"
+            "app.api.main.check_database_connection",
         ) as check_database,
     ):
         response = client.get("/ready")

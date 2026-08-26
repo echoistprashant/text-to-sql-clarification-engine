@@ -21,6 +21,11 @@ class GeminiLLMClient:
 
         self._client = genai.Client(
             api_key=settings.gemini_api_key,
+            http_options=types.HttpOptions(
+                timeout=int(
+                    settings.gemini_timeout_seconds * 1000
+                ),
+            ),
         )
 
         self._model = (

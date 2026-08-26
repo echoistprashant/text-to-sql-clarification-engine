@@ -41,23 +41,50 @@ class FakeModels:
 
 
 class FakeGenAIClient:
-    def __init__(self):
+    def __init__(
+        self,
+        api_key: str,
+        http_options=None,
+    ):
+        self.api_key = api_key
+        self.http_options = http_options
         self.models = FakeModels()
+
+
+def _patch_genai_client(
+    monkeypatch,
+    fake_client: FakeGenAIClient,
+):
+    def create_client(
+        api_key: str,
+        http_options=None,
+    ):
+        fake_client.api_key = api_key
+        fake_client.http_options = http_options
+
+        return fake_client
+
+    monkeypatch.setattr(
+        "app.llm.gemini.genai.Client",
+        create_client,
+    )
 
 
 def test_gemini_client_uses_default_model(
     monkeypatch,
 ):
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     monkeypatch.setenv(
         "GEMINI_API_KEY",
         "test-key",
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -79,16 +106,18 @@ def test_gemini_client_uses_default_model(
 def test_gemini_client_sends_prompt(
     monkeypatch,
 ):
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     monkeypatch.setenv(
         "GEMINI_API_KEY",
         "test-key",
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -108,16 +137,18 @@ def test_gemini_client_sends_prompt(
 def test_gemini_client_supports_custom_model(
     monkeypatch,
 ):
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     monkeypatch.setenv(
         "GEMINI_API_KEY",
         "test-key",
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient(
@@ -153,7 +184,9 @@ def test_gemini_client_requires_api_key(
 def test_gemini_client_rejects_empty_response(
     monkeypatch,
 ):
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     def empty_response(
         *,
@@ -172,9 +205,9 @@ def test_gemini_client_rejects_empty_response(
         "test-key",
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -189,16 +222,18 @@ def test_gemini_client_rejects_empty_response(
 def test_gemini_client_requests_structured_json(
     monkeypatch,
 ):
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     monkeypatch.setenv(
         "GEMINI_API_KEY",
         "test-key",
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -223,6 +258,45 @@ def test_gemini_client_requests_structured_json(
     )
 
 
+def test_gemini_client_uses_configured_timeout(
+    monkeypatch,
+):
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
+
+    monkeypatch.setenv(
+        "GEMINI_API_KEY",
+        "test-key",
+    )
+
+    monkeypatch.setenv(
+        "GEMINI_TIMEOUT_SECONDS",
+        "45",
+    )
+
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
+    )
+
+    client = GeminiLLMClient()
+
+    client.generate(
+        "Extract database intent."
+    )
+
+    assert (
+        fake_client.http_options
+        is not None
+    )
+
+    assert (
+        fake_client.http_options.timeout
+        == 45000
+    )
+
+
 def _server_error() -> errors.ServerError:
     return errors.ServerError(
         503,
@@ -244,7 +318,9 @@ def test_gemini_client_retries_server_error_then_succeeds(
         "test-key",
     )
 
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     response = FakeResponse(
         '{"entity": "customers"}'
@@ -257,9 +333,9 @@ def test_gemini_client_retries_server_error_then_succeeds(
         ]
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -291,7 +367,9 @@ def test_gemini_client_retries_server_errors_with_backoff(
         "test-key",
     )
 
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     response = FakeResponse(
         '{"entity": "customers"}'
@@ -305,9 +383,9 @@ def test_gemini_client_retries_server_errors_with_backoff(
         ]
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -342,15 +420,17 @@ def test_gemini_client_stops_after_max_retries(
         "test-key",
     )
 
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     fake_client.models.generate_content = Mock(
         side_effect=_server_error()
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
@@ -380,7 +460,9 @@ def test_gemini_client_does_not_retry_non_server_error(
         "test-key",
     )
 
-    fake_client = FakeGenAIClient()
+    fake_client = FakeGenAIClient(
+        api_key="test-key",
+    )
 
     error = RuntimeError(
         "Permanent failure"
@@ -390,9 +472,9 @@ def test_gemini_client_does_not_retry_non_server_error(
         side_effect=error
     )
 
-    monkeypatch.setattr(
-        "app.llm.gemini.genai.Client",
-        lambda api_key: fake_client,
+    _patch_genai_client(
+        monkeypatch,
+        fake_client,
     )
 
     client = GeminiLLMClient()
