@@ -1,13 +1,9 @@
-import os
-
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-load_dotenv()
+from app.config import get_settings
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+settings = get_settings()
 
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable is not set")
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    settings.database_url,
+)

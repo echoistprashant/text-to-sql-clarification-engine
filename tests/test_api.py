@@ -324,8 +324,11 @@ def test_analyze_clarification_rejects_unknown_analysis():
     assert response.status_code == 404
 
     assert response.json() == {
-        "detail": "Analysis not found.",
+    "error": {
+        "code": "NOT_FOUND",
+        "message": "Analysis not found.",
     }
+}
 
 
 def test_execute_returns_clarification_when_unresolved():
@@ -492,5 +495,307 @@ def test_execute_clarification_rejects_unknown_analysis():
     assert response.status_code == 404
 
     assert response.json() == {
-        "detail": "Analysis not found.",
+    "error": {
+        "code": "NOT_FOUND",
+        "message": "Analysis not found.",
     }
+}
+
+
+def test_analyze_validation_error_uses_api_error_format():
+    response = client.post(
+        "/analyze",
+        json={
+            "question": "",
+        },
+    )
+
+    assert response.status_code == 422
+
+    assert response.json() == {
+        "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Request validation failed.",
+        }
+    }
+
+
+def test_analyze_missing_question_uses_api_error_format():
+    response = client.post(
+        "/analyze",
+        json={},
+    )
+
+    assert response.status_code == 422
+
+    assert response.json() == {
+        "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Request validation failed.",
+        }
+    }
+
+
+def test_unknown_analysis_uses_api_error_format():
+    response = client.post(
+        "/analyze/clarification",
+        json={
+            "analysis_id": "does-not-exist",
+            "answer": "most units purchased",
+        },
+    )
+
+    assert response.status_code == 404
+
+    assert response.json() == {
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
+    }
+
+
+def test_unknown_execute_analysis_uses_api_error_format():
+    response = client.post(
+        "/execute/clarification",
+        json={
+            "analysis_id": "does-not-exist",
+            "answer": "most units purchased",
+        },
+    )
+
+    assert response.status_code == 404
+
+    assert response.json() == {
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
+    }
+
+
+def test_destructive_request_uses_unsupported_operation_error():
+    response = client.post(
+        "/analyze",
+        json={
+            "question": "Delete all customers",
+        },
+    )
+
+    assert response.status_code == 400
+
+    body = response.json()
+
+    assert body["error"]["code"] == (
+        "UNSUPPORTED_OPERATION"
+    )
+
+    assert body["error"]["message"] == (
+        "Only read-only database questions are supported."
+    )    
+
+
+def test_unresolved_analysis_is_stored():
+    response = client.post(
+        "/analyze",
+        json={
+            "question": "Which customers bought the most laptops?"
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["resolved"] is False
+    assert body["analysis_id"] is not None
+    assert body["clarification"] is not None
+
+
+def test_resolved_analysis_does_not_create_analysis_id():
+    response = client.post(
+        "/analyze",
+        json={
+            "question": "Show customers from India"
+        },
+    )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["resolved"] is True
+    assert body["analysis_id"] is None
+
+
+def test_analyze_clarification_removes_resolved_analysis():
+    response = client.post(
+        "/analyze",
+        json={
+            "question": "Which customers bought the most laptops?"
+        },
+    )
+
+    assert response.status_code == 200
+
+    analysis_id = response.json()["analysis_id"]
+
+    assert analysis_id is not None
+
+    clarification_response = client.post(
+        "/analyze/clarification",
+        json={
+            "analysis_id": analysis_id,
+            "answer": "Most units purchased",
+        },
+    )
+
+    assert clarification_response.status_code == 200
+
+    body = clarification_response.json()
+
+    assert body["resolved"] is True
+    assert body["analysis_id"] is None
+
+    second_response = client.post(
+        "/analyze/clarification",
+        json={
+            "analysis_id": analysis_id,
+            "answer": "Most orders",
+        },
+    )
+
+    assert second_response.status_code == 404
+
+    assert second_response.json() == {
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
+    }
+
+
+def test_execute_clarification_removes_resolved_analysis():
+    response = client.post(
+        "/execute",
+        json={
+            "question": "Which customers bought the most laptops?"
+        },
+    )
+
+    assert response.status_code == 200
+
+    analysis_id = response.json()["analysis_id"]
+
+    assert analysis_id is not None
+
+    clarification_response = client.post(
+        "/execute/clarification",
+        json={
+            "analysis_id": analysis_id,
+            "answer": "Most units purchased",
+        },
+    )
+
+    assert clarification_response.status_code == 200
+
+    body = clarification_response.json()
+
+    assert body["resolved"] is True
+    assert body["execution"] is not None
+
+    second_response = client.post(
+        "/execute/clarification",
+        json={
+            "analysis_id": analysis_id,
+            "answer": "Most orders",
+        },
+    )
+
+    assert second_response.status_code == 404
+
+    assert second_response.json() == {
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
+    }    
+
+def test_health_check_returns_ok():
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+    }
+    assert response.headers["X-Request-ID"]
+
+
+def test_request_id_is_generated():
+    response = client.get("/health")
+
+    request_id = response.headers.get(
+        "X-Request-ID"
+    )
+
+    assert request_id
+    assert len(request_id) == 32
+
+
+def test_request_id_is_preserved():
+    request_id = "test-request-123"
+
+    response = client.get(
+        "/health",
+        headers={
+            "X-Request-ID": request_id,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == request_id
+
+
+def test_validation_error_contains_request_id():
+    request_id = "validation-request-123"
+
+    response = client.post(
+        "/analyze",
+        json={},
+        headers={
+            "X-Request-ID": request_id,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.headers["X-Request-ID"] == request_id
+    assert response.json() == {
+        "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Request validation failed.",
+        }
+    }
+
+
+def test_unknown_analysis_contains_request_id():
+    request_id = "missing-analysis-123"
+
+    response = client.post(
+        "/analyze/clarification",
+        json={
+            "analysis_id": "does-not-exist",
+            "answer": "most units purchased",
+        },
+        headers={
+            "X-Request-ID": request_id,
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.headers["X-Request-ID"] == request_id
+    assert response.json() == {
+        "error": {
+            "code": "NOT_FOUND",
+            "message": "Analysis not found.",
+        }
+    }    

@@ -1,9 +1,9 @@
-import os
 import time
 
 from google import genai
 from google.genai import errors, types
 
+from app.config import get_settings
 from app.llm.schemas import INTENT_RESPONSE_SCHEMA
 
 DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite"
@@ -15,23 +15,35 @@ INITIAL_RETRY_DELAY_SECONDS = 1.0
 class GeminiLLMClient:
     def __init__(
         self,
-        model: str = DEFAULT_GEMINI_MODEL,
+        model: str | None = None,
     ) -> None:
-        api_key = os.getenv("GEMINI_API_KEY")
-
-        if not api_key:
-            raise RuntimeError(
-                "GEMINI_API_KEY environment variable "
-                "is not set."
-            )
+        settings = get_settings()
 
         self._client = genai.Client(
-            api_key=api_key,
+            api_key=settings.gemini_api_key,
         )
-        self._model = model
 
-    def generate(self, prompt: str) -> str:
-        for attempt in range(MAX_RETRIES + 1):
+        self._model = (
+            model
+            if model is not None
+            else settings.gemini_model
+        )
+
+        self._max_retries = (
+            settings.gemini_max_retries
+        )
+
+        self._initial_retry_delay_seconds = (
+            settings.gemini_initial_retry_delay_seconds
+        )
+
+    def generate(
+        self,
+        prompt: str,
+    ) -> str:
+        for attempt in range(
+            self._max_retries + 1,
+        ):
             try:
                 response = (
                     self._client.models.generate_content(
@@ -54,11 +66,16 @@ class GeminiLLMClient:
                 return response.text
 
             except errors.ServerError:
-                if attempt >= MAX_RETRIES:
+                if attempt >= self._max_retries:
                     raise
 
                 delay = (
-                    INITIAL_RETRY_DELAY_SECONDS
+                    self._initial_retry_delay_seconds
                     * (2**attempt)
                 )
+
                 time.sleep(delay)
+
+        raise RuntimeError(
+            "Gemini generation failed."
+        )

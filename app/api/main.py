@@ -1,9 +1,13 @@
+import logging
+import time
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from app.config import get_settings
 from app.db.schema_inspector import get_schema
 from app.intent.models import Aggregation, SortDirection
 from app.llm.client import LLMClient
@@ -16,6 +20,8 @@ from app.pipeline.sql import (
     execute_sql_analysis,
 )
 from app.schema.models import DatabaseSchema
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Text-to-SQL Clarification Engine",
@@ -99,8 +105,9 @@ def _error_response(
     status_code: int,
     code: str,
     message: str,
+    request_id: str | None = None,
 ) -> JSONResponse:
-    return JSONResponse(
+    response = JSONResponse(
         status_code=status_code,
         content={
             "error": {
@@ -110,24 +117,21 @@ def _error_response(
         },
     )
 
+    if request_id is not None:
+        response.headers["X-Request-ID"] = request_id
 
-@app.exception_handler(ValueError)
-async def value_error_handler(
-    request: Request,
-    exc: ValueError,
-) -> JSONResponse:
-    message = str(exc)
+    return response
 
+
+def _classify_value_error(
+    message: str,
+) -> tuple[int, str]:
     if (
         "read-only database questions" in message
         or "Forbidden SQL operation" in message
         or "Only SELECT statements" in message
     ):
-        return _error_response(
-            status_code=400,
-            code="UNSUPPORTED_OPERATION",
-            message=message,
-        )
+        return 400, "UNSUPPORTED_OPERATION"
 
     if (
         "Cannot execute SQL" in message
@@ -136,16 +140,163 @@ async def value_error_handler(
         or "Expected a qualified column name" in message
         or "Unsupported filter operator" in message
     ):
-        return _error_response(
-            status_code=400,
-            code="INVALID_QUERY",
-            message=message,
+        return 400, "INVALID_QUERY"
+
+    return 400, "INVALID_REQUEST"
+
+
+@app.middleware("http")
+async def request_observability(
+    request: Request,
+    call_next,
+):
+    request_id = request.headers.get(
+        "X-Request-ID",
+    )
+
+    if not request_id:
+        request_id = uuid4().hex
+
+    request.state.request_id = request_id
+
+    start_time = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (
+            time.perf_counter() - start_time
+        ) * 1000
+
+        logger.exception(
+            "Request failed: method=%s path=%s "
+            "request_id=%s duration_ms=%.2f",
+            request.method,
+            request.url.path,
+            request_id,
+            duration_ms,
         )
 
+        raise
+
+    duration_ms = (
+        time.perf_counter() - start_time
+    ) * 1000
+
+    response.headers["X-Request-ID"] = request_id
+
+    logger.info(
+        "Request completed: method=%s path=%s "
+        "status=%s request_id=%s duration_ms=%.2f",
+        request.method,
+        request.url.path,
+        response.status_code,
+        request_id,
+        duration_ms,
+    )
+
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    request_id = getattr(
+        request.state,
+        "request_id",
+        None,
+    )
+
+    logger.warning(
+        "Request validation failed: method=%s "
+        "path=%s request_id=%s",
+        request.method,
+        request.url.path,
+        request_id,
+    )
+
     return _error_response(
-        status_code=400,
-        code="INVALID_REQUEST",
+        status_code=422,
+        code="VALIDATION_ERROR",
+        message="Request validation failed.",
+        request_id=request_id,
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(
+    request: Request,
+    exc: HTTPException,
+) -> JSONResponse:
+    request_id = getattr(
+        request.state,
+        "request_id",
+        None,
+    )
+
+    logger.warning(
+        "HTTP error: method=%s path=%s "
+        "status=%s request_id=%s",
+        request.method,
+        request.url.path,
+        exc.status_code,
+        request_id,
+    )
+
+    if exc.status_code == 404:
+        code = "NOT_FOUND"
+    elif exc.status_code == 400:
+        code = "BAD_REQUEST"
+    else:
+        code = "HTTP_ERROR"
+
+    message = (
+        str(exc.detail)
+        if isinstance(exc.detail, str)
+        else "HTTP request failed."
+    )
+
+    return _error_response(
+        status_code=exc.status_code,
+        code=code,
         message=message,
+        request_id=request_id,
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(
+    request: Request,
+    exc: ValueError,
+) -> JSONResponse:
+    request_id = getattr(
+        request.state,
+        "request_id",
+        None,
+    )
+
+    message = str(exc)
+
+    status_code, code = _classify_value_error(
+        message,
+    )
+
+    logger.warning(
+        "Application error: method=%s path=%s "
+        "code=%s request_id=%s",
+        request.method,
+        request.url.path,
+        code,
+        request_id,
+    )
+
+    return _error_response(
+        status_code=status_code,
+        code=code,
+        message=message,
+        request_id=request_id,
     )
 
 
@@ -154,10 +305,26 @@ async def unexpected_exception_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
+    request_id = getattr(
+        request.state,
+        "request_id",
+        None,
+    )
+
+    logger.exception(
+        "Unhandled exception: method=%s path=%s "
+        "request_id=%s",
+        request.method,
+        request.url.path,
+        request_id,
+        exc_info=exc,
+    )
+
     return _error_response(
         status_code=500,
         code="INTERNAL_ERROR",
         message="An unexpected internal error occurred.",
+        request_id=request_id,
     )
 
 
@@ -285,6 +452,23 @@ def _get_analysis(
 @app.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/ready")
+def readiness_check() -> dict[str, str]:
+    settings = get_settings()
+
+    if not settings.database_url:
+        raise RuntimeError(
+            "Database configuration is unavailable."
+        )
+
+    if not settings.gemini_api_key:
+        raise RuntimeError(
+            "Gemini configuration is unavailable."
+        )
+
+    return {"status": "ready"}
 
 
 @app.post(
