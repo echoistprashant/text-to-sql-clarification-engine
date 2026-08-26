@@ -1,10 +1,14 @@
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
 
 from app.api.main import (
     app,
     get_database_schema,
     get_llm_client,
 )
+from app.config.settings import Settings
 from app.db.schema_inspector import get_schema
 from app.llm.fake import FakeLLMClient
 
@@ -799,3 +803,57 @@ def test_unknown_analysis_contains_request_id():
             "message": "Analysis not found.",
         }
     }    
+
+def test_readiness_check_returns_ready():
+    settings = Settings(
+        app_name="Test App",
+        app_version="0.1.0",
+        environment="test",
+        log_level="INFO",
+        database_url="sqlite:///test.db",
+        gemini_api_key="test-key",
+        gemini_model="test-model",
+        gemini_max_retries=3,
+        gemini_initial_retry_delay_seconds=1.0,
+    )
+
+    with (
+        patch(
+            "app.api.main.get_settings",
+            return_value=settings,
+        ),
+        patch(
+            "app.api.main.check_database_connection"
+        ) as check_database,
+    ):
+        response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ready",
+    }
+    assert response.headers["X-Request-ID"]
+    check_database.assert_called_once()
+
+
+def test_readiness_check_fails_when_database_is_unavailable():
+    error = OperationalError(
+        "Database unavailable.",
+        {},
+        RuntimeError("connection failed"),
+    )
+
+    with patch(
+        "app.api.main.check_database_connection",
+        side_effect=error,
+    ):
+        response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "error": {
+            "code": "HTTP_ERROR",
+            "message": "Database is unavailable.",
+        }
+    }
+    assert response.headers["X-Request-ID"]

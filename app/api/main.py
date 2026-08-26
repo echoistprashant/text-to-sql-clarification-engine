@@ -6,8 +6,10 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import get_settings
+from app.db.connection import check_database_connection
 from app.db.schema_inspector import get_schema
 from app.intent.models import Aggregation, SortDirection
 from app.llm.client import LLMClient
@@ -459,17 +461,29 @@ def readiness_check() -> dict[str, str]:
     settings = get_settings()
 
     if not settings.database_url:
-        raise RuntimeError(
-            "Database configuration is unavailable."
+        raise HTTPException(
+            status_code=503,
+            detail="Database configuration is unavailable.",
         )
 
     if not settings.gemini_api_key:
-        raise RuntimeError(
-            "Gemini configuration is unavailable."
+        raise HTTPException(
+            status_code=503,
+            detail="Gemini configuration is unavailable.",
         )
 
-    return {"status": "ready"}
+    try:
+        check_database_connection()
+    except SQLAlchemyError:
+        logger.warning(
+            "Database readiness check failed.",
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Database is unavailable.",
+        ) from None
 
+    return {"status": "ready"}
 
 @app.post(
     "/analyze",
