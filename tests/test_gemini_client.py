@@ -18,26 +18,57 @@ class FakeResponse:
         self.text = text
 
 
-class FakeModels:
+class FakeChat:
     def __init__(self):
         self.model = None
-        self.contents = None
         self.config = None
+        self.contents = None
 
-    def generate_content(
+        self.send_message = Mock(
+            side_effect=self._send_message,
+        )
+
+    def configure(
         self,
         *,
         model: str,
-        contents: str,
         config,
-    ) -> FakeResponse:
+    ):
         self.model = model
-        self.contents = contents
         self.config = config
+
+    def _send_message(
+        self,
+        prompt: str,
+    ) -> FakeResponse:
+        self.contents = prompt
 
         return FakeResponse(
             '{"entity": "customers"}'
         )
+
+class FakeChats:
+    def __init__(self):
+        self.model = None
+        self.config = None
+        self.contents = None
+        self.chat = FakeChat()
+
+    def create(
+        self,
+        *,
+        model: str,
+        config,
+    ) -> FakeChat:
+        self.model = model
+        self.config = config
+
+        self.chat.configure(
+            model=model,
+            config=config,
+        )
+
+        return self.chat
 
 
 class FakeGenAIClient:
@@ -48,7 +79,7 @@ class FakeGenAIClient:
     ):
         self.api_key = api_key
         self.http_options = http_options
-        self.models = FakeModels()
+        self.chats = FakeChats()
 
 
 def _patch_genai_client(
@@ -98,7 +129,7 @@ def test_gemini_client_uses_default_model(
     )
 
     assert (
-        fake_client.models.model
+        fake_client.chats.model
         == DEFAULT_GEMINI_MODEL
     )
 
@@ -129,8 +160,12 @@ def test_gemini_client_sends_prompt(
     client.generate(prompt)
 
     assert (
-        fake_client.models.contents
+        fake_client.chats.chat.contents
         == prompt
+    )
+
+    fake_client.chats.chat.send_message.assert_called_once_with(
+        prompt,
     )
 
 
@@ -158,7 +193,7 @@ def test_gemini_client_supports_custom_model(
     client.generate("test")
 
     assert (
-        fake_client.models.model
+        fake_client.chats.model
         == "custom-model"
     )
 
@@ -188,16 +223,8 @@ def test_gemini_client_rejects_empty_response(
         api_key="test-key",
     )
 
-    def empty_response(
-        *,
-        model: str,
-        contents: str,
-        config,
-    ) -> FakeResponse:
-        return FakeResponse(None)
-
-    fake_client.models.generate_content = (
-        empty_response
+    fake_client.chats.chat.send_message = Mock(
+        return_value=FakeResponse(None)
     )
 
     monkeypatch.setenv(
@@ -243,17 +270,17 @@ def test_gemini_client_requests_structured_json(
     )
 
     assert (
-        fake_client.models.config
+        fake_client.chats.config
         is not None
     )
 
     assert (
-        fake_client.models.config.response_mime_type
+        fake_client.chats.config.response_mime_type
         == "application/json"
     )
 
     assert (
-        fake_client.models.config.response_schema
+        fake_client.chats.config.response_schema
         is not None
     )
 
@@ -322,14 +349,12 @@ def test_gemini_client_retries_server_error_then_succeeds(
         api_key="test-key",
     )
 
-    response = FakeResponse(
-        '{"entity": "customers"}'
-    )
-
-    fake_client.models.generate_content = Mock(
+    fake_client.chats.chat.send_message = Mock(
         side_effect=[
             _server_error(),
-            response,
+            FakeResponse(
+                '{"entity": "customers"}'
+            ),
         ]
     )
 
@@ -352,7 +377,7 @@ def test_gemini_client_retries_server_error_then_succeeds(
     )
 
     assert (
-        fake_client.models.generate_content.call_count
+        fake_client.chats.chat.send_message.call_count
         == 2
     )
 
@@ -371,15 +396,13 @@ def test_gemini_client_retries_server_errors_with_backoff(
         api_key="test-key",
     )
 
-    response = FakeResponse(
-        '{"entity": "customers"}'
-    )
-
-    fake_client.models.generate_content = Mock(
+    fake_client.chats.chat.send_message = Mock(
         side_effect=[
             _server_error(),
             _server_error(),
-            response,
+            FakeResponse(
+                '{"entity": "customers"}'
+            ),
         ]
     )
 
@@ -402,7 +425,7 @@ def test_gemini_client_retries_server_errors_with_backoff(
     )
 
     assert (
-        fake_client.models.generate_content.call_count
+        fake_client.chats.chat.send_message.call_count
         == 3
     )
 
@@ -424,7 +447,7 @@ def test_gemini_client_stops_after_max_retries(
         api_key="test-key",
     )
 
-    fake_client.models.generate_content = Mock(
+    fake_client.chats.chat.send_message = Mock(
         side_effect=_server_error()
     )
 
@@ -445,7 +468,7 @@ def test_gemini_client_stops_after_max_retries(
         )
 
     assert (
-        fake_client.models.generate_content.call_count
+        fake_client.chats.chat.send_message.call_count
         == MAX_RETRIES + 1
     )
 
@@ -468,7 +491,7 @@ def test_gemini_client_does_not_retry_non_server_error(
         "Permanent failure"
     )
 
-    fake_client.models.generate_content = Mock(
+    fake_client.chats.chat.send_message = Mock(
         side_effect=error
     )
 
@@ -490,7 +513,7 @@ def test_gemini_client_does_not_retry_non_server_error(
         )
 
     assert (
-        fake_client.models.generate_content.call_count
+        fake_client.chats.chat.send_message.call_count
         == 1
     )
 

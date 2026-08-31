@@ -50,17 +50,18 @@ class GeminiLLMClient:
             self._max_retries + 1,
         ):
             try:
-                response = (
-                    self._client.models.generate_content(
-                        model=self._model,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            response_schema=(
-                                INTENT_RESPONSE_SCHEMA
-                            ),
+                chat = self._client.chats.create(
+                    model=self._model,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=(
+                            INTENT_RESPONSE_SCHEMA
                         ),
-                    )
+                    ),
+                )
+
+                response = chat.send_message(
+                    prompt,
                 )
 
                 if not response.text:

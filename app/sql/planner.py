@@ -107,6 +107,14 @@ def _build_filters(
     filters: list[SQLFilter] = []
     seen: set[tuple[str, str, str, str]] = set()
 
+    concrete_value_keys = {
+        (
+            match.table_name,
+            match.column_name,
+        )
+        for match in value_matches
+    }
+
     for item in intent.filters:
         table_name, column_name = _split_qualified_column(
             item.column
@@ -117,6 +125,14 @@ def _build_filters(
             table_name,
             column_name,
         )
+
+        # A concrete schema value match is more precise than
+        # a broad textual filter on the same column.
+        if (
+            (table_name, column_name) in concrete_value_keys
+            and item.operator.upper() in {"LIKE", "NOT LIKE"}
+        ):
+            continue
 
         filter_key = (
             table_name,
@@ -168,7 +184,6 @@ def _build_filters(
         )
 
     return filters
-
 
 def _collect_required_tables(
     intent: QueryIntent,

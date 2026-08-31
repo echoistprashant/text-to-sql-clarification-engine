@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.api.analysis_store import AnalysisStore
 from app.config import get_settings
 from app.db.connection import check_database_connection
 from app.db.schema_inspector import get_schema
@@ -58,7 +59,7 @@ app = FastAPI(
 )
 
 
-_analysis_store: dict[str, SQLAnalysisResult] = {}
+_analysis_store = AnalysisStore()
 
 
 class AnalyzeRequest(BaseModel):
@@ -461,11 +462,7 @@ def _build_execution_response(
 def _store_analysis(
     result: SQLAnalysisResult,
 ) -> str:
-    analysis_id = uuid4().hex
-
-    _analysis_store[analysis_id] = result
-
-    return analysis_id
+    return _analysis_store.create(result)
 
 
 def _get_analysis(
@@ -643,18 +640,18 @@ def analyze_clarification(
     )
 
     if updated_result.analysis.clarification.resolved:
-        _analysis_store.pop(
+        _analysis_store.delete(
             request.analysis_id,
-            None,
         )
 
         return _build_analysis_response(
             updated_result,
         )
 
-    _analysis_store[
-        request.analysis_id
-    ] = updated_result
+    _analysis_store.update(
+        request.analysis_id,
+        updated_result,
+    )
 
     return _build_analysis_response(
         updated_result,
@@ -767,18 +764,18 @@ def execute_clarification(
     )
 
     if not updated_result.analysis.clarification.resolved:
-        _analysis_store[
-            request.analysis_id
-        ] = updated_result
+        _analysis_store.update(
+            request.analysis_id,
+            updated_result,
+        )
 
         return _build_analysis_response(
             updated_result,
             analysis_id=request.analysis_id,
         )
 
-    _analysis_store.pop(
+    _analysis_store.delete(
         request.analysis_id,
-        None,
     )
 
     execution_result = execute_sql_analysis(
