@@ -106,6 +106,47 @@ def _parse_filters(
     return filters
 
 
+def _parse_qualified_column(
+    value: object,
+    field_name: str,
+) -> str | None:
+    if value is None:
+        return None
+
+    if not isinstance(value, str):
+        raise TypeError(
+            f"'{field_name}' must be a string or null."
+        )
+
+    value = value.strip()
+
+    if not value:
+        raise ValueError(
+            f"'{field_name}' must not be empty."
+        )
+
+    # group_by and metric are expected to use
+    # table.column notation.
+    if "." not in value:
+        raise ValueError(
+            f"'{field_name}' must be a fully qualified "
+            "table.column name."
+        )
+
+    table_name, column_name = value.split(
+        ".",
+        1,
+    )
+
+    if not table_name or not column_name:
+        raise ValueError(
+            f"'{field_name}' must be a valid "
+            "table.column name."
+        )
+
+    return value
+
+
 def parse_intent_response(
     response: str,
 ) -> QueryIntent:
@@ -165,11 +206,22 @@ def parse_intent_response(
                 "'limit' must be greater than zero."
             )
 
+    metric = _parse_qualified_column(
+        data.get("metric"),
+        "metric",
+    )
+
+    group_by = _parse_qualified_column(
+        data.get("group_by"),
+        "group_by",
+    )
+
     return QueryIntent(
         entity=data.get("entity"),
         filters=filters,
-        metric=data.get("metric"),
+        metric=metric,
         aggregation=aggregation,
         sort_direction=sort_direction,
         limit=limit,
+        group_by=group_by,
     )

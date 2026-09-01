@@ -205,6 +205,12 @@ def _collect_required_tables(
         )
         required_tables.add(metric_table)
 
+    if intent.group_by is not None:
+        group_by_table, _ = _split_qualified_column(
+            intent.group_by
+        )
+        required_tables.add(group_by_table)
+
     for match in schema_result.value_matches:
         required_tables.add(
             match.table_name
@@ -212,21 +218,24 @@ def _collect_required_tables(
 
     return required_tables
 
-
 def _build_join_path(
     schema: DatabaseSchema,
     intent: QueryIntent,
     schema_result: SchemaRetrievalResult,
 ) -> list[str]:
-    if not schema_result.join_path:
-        raise ValueError(
-            "Schema retrieval result must contain a join path."
-        )
-
     required_tables = _collect_required_tables(
         intent,
         schema_result,
     )
+
+    # A single-table query does not require a join path.
+    if required_tables == {intent.entity}:
+        return [intent.entity]
+
+    if not schema_result.join_path:
+        raise ValueError(
+            "Schema retrieval result must contain a join path."
+        )
 
     existing_path = list(
         schema_result.join_path
@@ -359,15 +368,79 @@ def plan_sql_query(
             )
         )
 
+    # ---------------------------------------------------------
+    # Standalone aggregation:
+    #
+    # "What is the total revenue?"
+    #
+    # SELECT SUM(orders.total_amount)
+    # FROM orders;
+    #
+    # No SELECT dimension and no GROUP BY.
+    # ---------------------------------------------------------
+
     is_standalone_aggregation = (
         bool(aggregations)
+        and intent.group_by is None
         and intent.sort_direction is None
-        and intent.entity == "order_items"
+        and intent.limit is None
     )
 
     if is_standalone_aggregation:
         select_columns: list[SQLColumn] = []
         group_by: list[SQLColumn] = []
+
+    # ---------------------------------------------------------
+    # Grouped aggregation:
+    #
+    # "Show revenue by customer"
+    #
+    # SELECT customers.name,
+    #        SUM(orders.total_amount)
+    # FROM orders
+    # JOIN customers ...
+    # GROUP BY customers.name;
+    # ---------------------------------------------------------
+
+    elif (
+        bool(aggregations)
+        and intent.group_by is not None
+    ):
+        group_table, group_column = (
+            _split_qualified_column(
+                intent.group_by
+            )
+        )
+
+        _find_column(
+            schema,
+            group_table,
+            group_column,
+        )
+
+        group_column_expression = SQLColumn(
+            table=group_table,
+            column=group_column,
+        )
+
+        select_columns = [
+            group_column_expression
+        ]
+
+        group_by = [
+            group_column_expression
+        ]
+
+    # ---------------------------------------------------------
+    # Non-aggregated query:
+    #
+    # "Show customers"
+    #
+    # SELECT customers.name
+    # FROM customers
+    # GROUP BY customers.name;
+    # ---------------------------------------------------------
+
     else:
         display_column = _find_display_column(
             schema,

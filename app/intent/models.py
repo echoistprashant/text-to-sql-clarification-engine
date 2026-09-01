@@ -30,3 +30,4 @@ class QueryIntent:
     aggregation: Aggregation | None = None
     sort_direction: SortDirection | None = None
     limit: int | None = None
+    group_by: str | None = None
