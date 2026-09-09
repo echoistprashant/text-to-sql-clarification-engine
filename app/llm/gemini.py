@@ -19,8 +19,12 @@ class GeminiLLMClient:
     ) -> None:
         settings = get_settings()
 
+        key = settings.gemini_api_key
+        if not key:
+            raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
+
         self._client = genai.Client(
-            api_key=settings.gemini_api_key,
+            api_key=key,
             http_options=types.HttpOptions(
                 timeout=int(settings.gemini_timeout_seconds * 1000),
             ),

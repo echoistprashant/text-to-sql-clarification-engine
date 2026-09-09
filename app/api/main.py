@@ -15,6 +15,7 @@ from app.db.schema_inspector import get_schema
 from app.intent.models import Aggregation, SortDirection
 from app.llm.client import LLMClient
 from app.llm.gemini import GeminiLLMClient
+from app.llm.openrouter import OpenRouterLLMClient
 from app.pipeline.sql import (
     SQLAnalysisResult,
     SQLAnswerResult,
@@ -350,6 +351,9 @@ def get_database_schema() -> DatabaseSchema:
 
 
 def get_llm_client() -> LLMClient:
+    settings = get_settings()
+    if settings.llm_provider == "openrouter":
+        return OpenRouterLLMClient()
     return GeminiLLMClient()
 
 
@@ -496,7 +500,13 @@ def readiness_check() -> dict[str, str]:
             detail="Database configuration is unavailable.",
         )
 
-    if not settings.gemini_api_key:
+    if settings.llm_provider == "openrouter":
+        if not settings.openrouter_api_key:
+            raise HTTPException(
+                status_code=503,
+                detail="OpenRouter configuration is unavailable.",
+            )
+    elif not settings.gemini_api_key:
         raise HTTPException(
             status_code=503,
             detail="Gemini configuration is unavailable.",

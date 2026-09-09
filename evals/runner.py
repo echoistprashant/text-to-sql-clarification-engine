@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from app.db.schema_inspector import get_schema
-from app.llm.gemini import GeminiLLMClient
 from app.pipeline.sql import analyze_for_sql
 from evals.questions import (
     EVALUATION_CASES,
@@ -66,8 +65,10 @@ def run_case(
 
 
 def run_evaluation() -> list[EvaluationResult]:
+    from app.api.main import get_llm_client
+
     schema = get_schema()
-    llm_client = GeminiLLMClient()
+    llm_client = get_llm_client()
 
     results = []
 

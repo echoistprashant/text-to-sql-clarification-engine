@@ -1,7 +1,10 @@
 README.md
 pyproject.toml
 app/api/__init__.py
+app/api/analysis_store.py
 app/api/main.py
+app/config/__init__.py
+app/config/settings.py
 app/db/__init__.py
 app/db/connection.py
 app/db/schema_inspector.py
@@ -11,6 +14,7 @@ app/intent/extractor.py
 app/intent/models.py
 app/intent/parser.py
 app/intent/resolver.py
+app/intent/safety.py
 app/intent/state.py
 app/intent/workflow.py
 app/llm/__init__.py
@@ -18,6 +22,7 @@ app/llm/client.py
 app/llm/context.py
 app/llm/fake.py
 app/llm/gemini.py
+app/llm/openrouter.py
 app/llm/schemas.py
 app/pipeline/__init__.py
 app/pipeline/analysis.py
@@ -44,6 +49,7 @@ app/sql/validator.py
 tests/test_ambiguity.py
 tests/test_analysis_answer.py
 tests/test_analysis_pipeline.py
+tests/test_analysis_store.py
 tests/test_api.py
 tests/test_clarification.py
 tests/test_clarification_state.py
@@ -53,11 +59,14 @@ tests/test_intent_extractor.py
 tests/test_intent_models.py
 tests/test_intent_parser.py
 tests/test_intent_resolver.py
+tests/test_intent_safety.py
 tests/test_intent_workflow.py
 tests/test_join_path.py
 tests/test_llm_client.py
 tests/test_llm_context.py
 tests/test_llm_schemas.py
+tests/test_openrouter_client.py
+tests/test_regression_queries.py
 tests/test_schema_graph.py
 tests/test_schema_inspector.py
 tests/test_schema_profiler.py

@@ -8,7 +8,7 @@ The **Text-to-SQL Clarification Engine** translates natural-language database in
 
 ## Key Features
 
-- **Robust Intent Extraction**: Uses Google Gemini (`gemini-2.5-flash` / `gemini-1.5-flash`) via the official `google-genai` SDK with strict JSON structured outputs (`entity`, `filters`, `metric`, `aggregation`, `group_by`, `sort_direction`, `limit`).
+- **Flexible LLM Providers (OpenRouter & Gemini)**: Uses OpenRouter API (`google/gemini-2.5-flash`, `openai/gpt-4o-mini`, etc.) or the official Google GenAI Gemini SDK with strict JSON structured outputs (`entity`, `filters`, `metric`, `aggregation`, `group_by`, `sort_direction`, `limit`).
 - **Interactive Clarification Loop**: Automatically detects missing metrics or ambiguous entities and asks targeted clarifying questions. Stores conversation states in an in-memory analysis store (`AnalysisStore`) with unique `analysis_id` handles.
 - **Intelligent Schema Retrieval & Join Path Resolution**: Inspects database metadata via SQLAlchemy, profiles column values, normalizes terms (handling singular/plural and business synonyms like *revenue*, *sales*, *units*), and uses Dijkstra's shortest path algorithm over schema foreign-key graphs to construct multi-table join paths.
 - **Safe Read-Only SQL Compiler**: Validates allowed tables, columns, joins, and aggregations against the real database schema. Rejects non-read-only queries (e.g. `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `GRANT`, `COPY`, `EXEC`, `CALL`).
