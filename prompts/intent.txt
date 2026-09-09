@@ -176,8 +176,11 @@ Rules:
     questions such as:
 
     "Which customers bought the most laptops?"
+    "Which customers spent the most?"
+    "Which products sold the most?"
+    "Which customers placed the most orders?"
 
-    That question should remain:
+    Those questions should remain:
 
       -> metric: null
       -> aggregation: null

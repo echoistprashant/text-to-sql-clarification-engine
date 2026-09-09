@@ -76,6 +76,9 @@ def analyze_question(
     llm_client: LLMClient,
     max_hops: int = 2,
 ) -> AnalysisResult:
+    if not question or not question.strip():
+        raise ValueError("Question cannot be empty.")
+
     validate_read_only_request(
         question,
     )
