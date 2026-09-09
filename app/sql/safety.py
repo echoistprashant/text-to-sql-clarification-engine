@@ -11,6 +11,13 @@ FORBIDDEN_SQL_KEYWORDS = {
     "GRANT",
     "REVOKE",
     "MERGE",
+    "COPY",
+    "EXEC",
+    "EXECUTE",
+    "BEGIN",
+    "COMMIT",
+    "ROLLBACK",
+    "CALL",
 }
 
 
@@ -22,33 +29,23 @@ def validate_read_only_sql(sql: str) -> None:
     ).upper()
 
     if not normalized:
-        raise ValueError(
-            "SQL query cannot be empty."
-        )
+        raise ValueError("SQL query cannot be empty.")
 
     statements = [
-        statement.strip()
-        for statement in normalized.split(";")
-        if statement.strip()
+        statement.strip() for statement in normalized.split(";") if statement.strip()
     ]
 
     if len(statements) > 1:
-        raise ValueError(
-            "Only one SQL statement is allowed."
-        )
+        raise ValueError("Only one SQL statement is allowed.")
 
     statement = statements[0]
 
     if not statement.startswith("SELECT"):
-        raise ValueError(
-            "Only SELECT statements are allowed."
-        )
+        raise ValueError("Only SELECT statements are allowed.")
 
     for keyword in FORBIDDEN_SQL_KEYWORDS:
         if re.search(
             rf"\b{keyword}\b",
             statement,
         ):
-            raise ValueError(
-                f"Forbidden SQL operation: {keyword}."
-            )
+            raise ValueError(f"Forbidden SQL operation: {keyword}.")

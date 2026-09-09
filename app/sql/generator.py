@@ -7,23 +7,14 @@ def compile_sql(query: SQLQuery) -> CompiledSQL:
 
     select_parts = [
         f"{column.table}.{column.column}"
-        + (
-            f" AS {column.alias}"
-            if column.alias
-            else ""
-        )
+        + (f" AS {column.alias}" if column.alias else "")
         for column in query.select_columns
     ]
 
     aggregation_parts = [
         f"{aggregation.function}("
         f"{aggregation.table}.{aggregation.column}"
-        f")"
-        + (
-            f" AS {aggregation.alias}"
-            if aggregation.alias
-            else ""
-        )
+        f")" + (f" AS {aggregation.alias}" if aggregation.alias else "")
         for aggregation in query.aggregations
     ]
 
@@ -33,26 +24,20 @@ def compile_sql(query: SQLQuery) -> CompiledSQL:
     ]
 
     if not select_items:
-        raise ValueError(
-            "SQL query must contain a SELECT expression."
-        )
+        raise ValueError("SQL query must contain a SELECT expression.")
 
-    parts.append(
-        "SELECT " + ", ".join(select_items)
-    )
+    parts.append("SELECT " + ", ".join(select_items))
 
-    if query.select_columns:
+    if query.joins:
+        from_table = query.joins[0].left_table
+    elif query.select_columns:
         from_table = query.select_columns[0].table
     elif query.aggregations:
         from_table = query.aggregations[0].table
     else:
-        raise ValueError(
-            "SQL query must contain a FROM source."
-        )
+        raise ValueError("SQL query must contain a FROM source.")
 
-    parts.append(
-        f"FROM {from_table}"
-    )
+    parts.append(f"FROM {from_table}")
 
     for join in query.joins:
         parts.append(
@@ -74,42 +59,25 @@ def compile_sql(query: SQLQuery) -> CompiledSQL:
             parameter_name = f"param_{index}"
 
             filter_parts.append(
-                f"{item.table}.{item.column} "
-                f"{item.operator} "
-                f":{parameter_name}"
+                f"{item.table}.{item.column} {item.operator} :{parameter_name}"
             )
 
             parameters[parameter_name] = item.value
 
-        parts.append(
-            "WHERE " + " AND ".join(filter_parts)
-        )
+        parts.append("WHERE " + " AND ".join(filter_parts))
 
     if query.group_by:
-        group_columns = [
-            f"{column.table}.{column.column}"
-            for column in query.group_by
-        ]
+        group_columns = [f"{column.table}.{column.column}" for column in query.group_by]
 
-        parts.append(
-            "GROUP BY " + ", ".join(group_columns)
-        )
+        parts.append("GROUP BY " + ", ".join(group_columns))
 
     if query.order_by:
-        order_items = [
-            f"{item.expression} "
-            f"{item.direction}"
-            for item in query.order_by
-        ]
+        order_items = [f"{item.expression} {item.direction}" for item in query.order_by]
 
-        parts.append(
-            "ORDER BY " + ", ".join(order_items)
-        )
+        parts.append("ORDER BY " + ", ".join(order_items))
 
     if query.limit is not None:
-        parts.append(
-            f"LIMIT {query.limit}"
-        )
+        parts.append(f"LIMIT {query.limit}")
 
     return CompiledSQL(
         sql="\n".join(parts) + ";",

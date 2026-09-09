@@ -11,9 +11,7 @@ def main() -> None:
     schema = get_schema()
     client = GeminiLLMClient()
 
-    question = (
-        "Which customers bought the most laptops?"
-    )
+    question = "Which customers bought the most laptops?"
 
     result = analyze_for_sql(
         question,
@@ -38,9 +36,7 @@ def main() -> None:
 
     if result.query is None:
         print()
-        print(
-            "SQL QUERY WAS NOT BUILT."
-        )
+        print("SQL QUERY WAS NOT BUILT.")
         return
 
     print()

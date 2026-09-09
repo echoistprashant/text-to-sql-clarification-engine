@@ -37,9 +37,7 @@ def test_extract_intent_uses_llm_client():
 def test_extract_intent_sends_question_to_llm():
     client = FakeLLMClient()
 
-    question = (
-        "Which customers bought the most laptops?"
-    )
+    question = "Which customers bought the most laptops?"
 
     extract_intent(
         question,
@@ -49,10 +47,7 @@ def test_extract_intent_sends_question_to_llm():
 
     assert len(client.prompts) == 1
     assert question in client.prompts[0]
-    assert (
-        "Extract the user's database query intent."
-        in client.prompts[0]
-    )
+    assert "Extract the user's database query intent." in client.prompts[0]
 
 
 def test_extract_intent_sends_schema_context_to_llm():
@@ -75,7 +70,8 @@ def test_extract_intent_sends_schema_context_to_llm():
     assert len(client.prompts) == 1
     assert "DATABASE CONTEXT:" in client.prompts[0]
     assert "TABLE customers" in client.prompts[0]
-    assert "customers.name" not in client.prompts[0]
+    assert "- name VARCHAR NOT NULL" in client.prompts[0]
+
 
 class SalesFakeLLMClient:
     def __init__(self):
@@ -127,7 +123,7 @@ def test_extract_intent_for_laptop_sales_uses_quantity_metric():
     assert intent.aggregation.value == "sum"
     assert len(intent.filters) == 1
     assert intent.filters[0].column == "products.name"
-    assert intent.filters[0].value == "laptop"    
+    assert intent.filters[0].value == "laptop"
 
 
 def test_extract_intent_prompt_defines_sales_quantity_rule():
@@ -156,5 +152,5 @@ def test_extract_intent_prompt_defines_sales_quantity_rule():
 
     assert "order_items.quantity" in prompt
     assert "How many <products> were sold?" in prompt
-    assert "aggregation: \"sum\"" in prompt
-    assert "COUNT(products.id)" in prompt    
+    assert 'aggregation: "sum"' in prompt
+    assert "COUNT(products.id)" in prompt

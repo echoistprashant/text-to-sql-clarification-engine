@@ -43,9 +43,8 @@ class FakeChat:
     ) -> FakeResponse:
         self.contents = prompt
 
-        return FakeResponse(
-            '{"entity": "customers"}'
-        )
+        return FakeResponse('{"entity": "customers"}')
+
 
 class FakeChats:
     def __init__(self):
@@ -120,18 +119,11 @@ def test_gemini_client_uses_default_model(
 
     client = GeminiLLMClient()
 
-    result = client.generate(
-        "Extract the database intent."
-    )
+    result = client.generate("Extract the database intent.")
 
-    assert result == (
-        '{"entity": "customers"}'
-    )
+    assert result == ('{"entity": "customers"}')
 
-    assert (
-        fake_client.chats.model
-        == DEFAULT_GEMINI_MODEL
-    )
+    assert fake_client.chats.model == DEFAULT_GEMINI_MODEL
 
 
 def test_gemini_client_sends_prompt(
@@ -153,16 +145,11 @@ def test_gemini_client_sends_prompt(
 
     client = GeminiLLMClient()
 
-    prompt = (
-        "Extract intent for customers."
-    )
+    prompt = "Extract intent for customers."
 
     client.generate(prompt)
 
-    assert (
-        fake_client.chats.chat.contents
-        == prompt
-    )
+    assert fake_client.chats.chat.contents == prompt
 
     fake_client.chats.chat.send_message.assert_called_once_with(
         prompt,
@@ -192,10 +179,7 @@ def test_gemini_client_supports_custom_model(
 
     client.generate("test")
 
-    assert (
-        fake_client.chats.model
-        == "custom-model"
-    )
+    assert fake_client.chats.model == "custom-model"
 
 
 def test_gemini_client_requires_api_key(
@@ -208,10 +192,7 @@ def test_gemini_client_requires_api_key(
 
     with pytest.raises(
         RuntimeError,
-        match=(
-            "GEMINI_API_KEY environment variable "
-            "is not set."
-        ),
+        match=("GEMINI_API_KEY environment variable is not set."),
     ):
         GeminiLLMClient()
 
@@ -223,9 +204,7 @@ def test_gemini_client_rejects_empty_response(
         api_key="test-key",
     )
 
-    fake_client.chats.chat.send_message = Mock(
-        return_value=FakeResponse(None)
-    )
+    fake_client.chats.chat.send_message = Mock(return_value=FakeResponse(None))
 
     monkeypatch.setenv(
         "GEMINI_API_KEY",
@@ -265,24 +244,13 @@ def test_gemini_client_requests_structured_json(
 
     client = GeminiLLMClient()
 
-    client.generate(
-        "Extract database intent."
-    )
+    client.generate("Extract database intent.")
 
-    assert (
-        fake_client.chats.config
-        is not None
-    )
+    assert fake_client.chats.config is not None
 
-    assert (
-        fake_client.chats.config.response_mime_type
-        == "application/json"
-    )
+    assert fake_client.chats.config.response_mime_type == "application/json"
 
-    assert (
-        fake_client.chats.config.response_schema
-        is not None
-    )
+    assert fake_client.chats.config.response_schema is not None
 
 
 def test_gemini_client_uses_configured_timeout(
@@ -309,19 +277,11 @@ def test_gemini_client_uses_configured_timeout(
 
     client = GeminiLLMClient()
 
-    client.generate(
-        "Extract database intent."
-    )
+    client.generate("Extract database intent.")
 
-    assert (
-        fake_client.http_options
-        is not None
-    )
+    assert fake_client.http_options is not None
 
-    assert (
-        fake_client.http_options.timeout
-        == 45000
-    )
+    assert fake_client.http_options.timeout == 45000
 
 
 def _server_error() -> errors.ServerError:
@@ -352,9 +312,7 @@ def test_gemini_client_retries_server_error_then_succeeds(
     fake_client.chats.chat.send_message = Mock(
         side_effect=[
             _server_error(),
-            FakeResponse(
-                '{"entity": "customers"}'
-            ),
+            FakeResponse('{"entity": "customers"}'),
         ]
     )
 
@@ -365,21 +323,12 @@ def test_gemini_client_retries_server_error_then_succeeds(
 
     client = GeminiLLMClient()
 
-    with patch(
-        "app.llm.gemini.time.sleep"
-    ) as sleep:
-        result = client.generate(
-            "Show all customers"
-        )
+    with patch("app.llm.gemini.time.sleep") as sleep:
+        result = client.generate("Show all customers")
 
-    assert result == (
-        '{"entity": "customers"}'
-    )
+    assert result == ('{"entity": "customers"}')
 
-    assert (
-        fake_client.chats.chat.send_message.call_count
-        == 2
-    )
+    assert fake_client.chats.chat.send_message.call_count == 2
 
     sleep.assert_called_once_with(1.0)
 
@@ -400,9 +349,7 @@ def test_gemini_client_retries_server_errors_with_backoff(
         side_effect=[
             _server_error(),
             _server_error(),
-            FakeResponse(
-                '{"entity": "customers"}'
-            ),
+            FakeResponse('{"entity": "customers"}'),
         ]
     )
 
@@ -413,21 +360,12 @@ def test_gemini_client_retries_server_errors_with_backoff(
 
     client = GeminiLLMClient()
 
-    with patch(
-        "app.llm.gemini.time.sleep"
-    ) as sleep:
-        result = client.generate(
-            "Show all customers"
-        )
+    with patch("app.llm.gemini.time.sleep") as sleep:
+        result = client.generate("Show all customers")
 
-    assert result == (
-        '{"entity": "customers"}'
-    )
+    assert result == ('{"entity": "customers"}')
 
-    assert (
-        fake_client.chats.chat.send_message.call_count
-        == 3
-    )
+    assert fake_client.chats.chat.send_message.call_count == 3
 
     assert sleep.call_args_list == [
         ((1.0,),),
@@ -447,9 +385,7 @@ def test_gemini_client_stops_after_max_retries(
         api_key="test-key",
     )
 
-    fake_client.chats.chat.send_message = Mock(
-        side_effect=_server_error()
-    )
+    fake_client.chats.chat.send_message = Mock(side_effect=_server_error())
 
     _patch_genai_client(
         monkeypatch,
@@ -458,19 +394,10 @@ def test_gemini_client_stops_after_max_retries(
 
     client = GeminiLLMClient()
 
-    with patch(
-        "app.llm.gemini.time.sleep"
-    ) as sleep, pytest.raises(
-        errors.ServerError
-    ):
-        client.generate(
-            "Show all customers"
-        )
+    with patch("app.llm.gemini.time.sleep") as sleep, pytest.raises(errors.ServerError):
+        client.generate("Show all customers")
 
-    assert (
-        fake_client.chats.chat.send_message.call_count
-        == MAX_RETRIES + 1
-    )
+    assert fake_client.chats.chat.send_message.call_count == MAX_RETRIES + 1
 
     assert sleep.call_count == MAX_RETRIES
 
@@ -487,13 +414,9 @@ def test_gemini_client_does_not_retry_non_server_error(
         api_key="test-key",
     )
 
-    error = RuntimeError(
-        "Permanent failure"
-    )
+    error = RuntimeError("Permanent failure")
 
-    fake_client.chats.chat.send_message = Mock(
-        side_effect=error
-    )
+    fake_client.chats.chat.send_message = Mock(side_effect=error)
 
     _patch_genai_client(
         monkeypatch,
@@ -502,19 +425,15 @@ def test_gemini_client_does_not_retry_non_server_error(
 
     client = GeminiLLMClient()
 
-    with patch(
-        "app.llm.gemini.time.sleep"
-    ) as sleep, pytest.raises(
-        RuntimeError,
-        match="Permanent failure",
+    with (
+        patch("app.llm.gemini.time.sleep") as sleep,
+        pytest.raises(
+            RuntimeError,
+            match="Permanent failure",
+        ),
     ):
-        client.generate(
-            "Show all customers"
-        )
+        client.generate("Show all customers")
 
-    assert (
-        fake_client.chats.chat.send_message.call_count
-        == 1
-    )
+    assert fake_client.chats.chat.send_message.call_count == 1
 
     sleep.assert_not_called()

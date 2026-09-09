@@ -14,9 +14,7 @@ from app.sql.executor import execute_sql_query
 def test_end_to_end_sql_generation_and_execution():
     schema = get_schema()
 
-    question = (
-        "Which customers bought the most laptops?"
-    )
+    question = "Which customers bought the most laptops?"
 
     schema_result = retrieve_schema(
         schema,
@@ -61,10 +59,7 @@ def test_end_to_end_sql_generation_and_execution():
     assert "JOIN order_items" in sql_result.sql
     assert "JOIN products" in sql_result.sql
     assert "SUM(order_items.quantity)" in sql_result.sql
-    assert (
-        "WHERE products.name = :param_1"
-        in sql_result.sql
-    )
+    assert "WHERE products.name = :param_1" in sql_result.sql
     assert "GROUP BY customers.name" in sql_result.sql
     assert "ORDER BY metric_value DESC" in sql_result.sql
     assert "LIMIT 5" in sql_result.sql

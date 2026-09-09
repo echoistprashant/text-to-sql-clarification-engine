@@ -68,9 +68,7 @@ def test_execute_sql_analysis_returns_formatted_answer():
         ("Rahul Sharma", 1),
     ]
 
-    assert result.answer == (
-        "name: Rahul Sharma, metric_value: 1"
-    )
+    assert result.answer == ("name: Rahul Sharma, metric_value: 1")
 
 
 def test_execute_sql_analysis_rejects_unresolved_result():
@@ -107,10 +105,6 @@ def test_execute_sql_analysis_rejects_unresolved_result():
     try:
         execute_sql_analysis(result)
     except ValueError as exc:
-        assert str(exc) == (
-            "Cannot execute SQL from an unresolved analysis."
-        )
+        assert str(exc) == ("Cannot execute SQL from an unresolved analysis.")
     else:
-        raise AssertionError(
-            "Expected ValueError for unresolved SQL analysis."
-        )
+        raise AssertionError("Expected ValueError for unresolved SQL analysis.")

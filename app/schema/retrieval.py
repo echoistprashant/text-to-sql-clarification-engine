@@ -38,10 +38,7 @@ def retrieve_schema(
         for column in table.columns:
             data_type = column.data_type.upper()
 
-            if not any(
-                data_type.startswith(text_type)
-                for text_type in TEXT_COLUMNS
-            ):
+            if not any(data_type.startswith(text_type) for text_type in TEXT_COLUMNS):
                 continue
 
             profile = profile_column_values(

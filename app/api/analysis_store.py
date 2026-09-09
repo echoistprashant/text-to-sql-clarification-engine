@@ -24,16 +24,14 @@ class AnalysisStore:
         return self._analyses.get(analysis_id)
 
     def update(
-       self,
-       analysis_id: str,
-       result: SQLAnalysisResult,
+        self,
+        analysis_id: str,
+        result: SQLAnalysisResult,
     ) -> None:
-       if analysis_id not in self._analyses:
-        raise KeyError(
-            f"Analysis '{analysis_id}' does not exist."
-        )
+        if analysis_id not in self._analyses:
+            raise KeyError(f"Analysis '{analysis_id}' does not exist.")
 
-       self._analyses[analysis_id] = result
+        self._analyses[analysis_id] = result
 
     def delete(
         self,
@@ -43,6 +41,3 @@ class AnalysisStore:
             analysis_id,
             None,
         )
-
-
-        

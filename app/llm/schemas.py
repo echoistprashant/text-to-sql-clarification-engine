@@ -43,6 +43,10 @@ INTENT_RESPONSE_SCHEMA = {
             "type": "INTEGER",
             "nullable": True,
         },
+        "group_by": {
+            "type": "STRING",
+            "nullable": True,
+        },
     },
     "required": [
         "entity",
@@ -51,5 +55,6 @@ INTENT_RESPONSE_SCHEMA = {
         "aggregation",
         "sort_direction",
         "limit",
+        "group_by",
     ],
 }

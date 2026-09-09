@@ -12,9 +12,7 @@ def main() -> None:
 
     client = GeminiLLMClient()
 
-    question = (
-        "Which customers bought the most laptops?"
-    )
+    question = "Which customers bought the most laptops?"
 
     result = analyze_question(
         question,
@@ -37,20 +35,12 @@ def main() -> None:
     print("VALUE MATCHES")
     print("=============")
     for match in result.schema.value_matches:
-        print(
-            f"- {match.table_name}."
-            f"{match.column_name} = "
-            f"{match.value}"
-        )
+        print(f"- {match.table_name}.{match.column_name} = {match.value}")
 
     print()
     print("JOIN PATH")
     print("=========")
-    print(
-        " -> ".join(
-            result.schema.join_path
-        )
-    )
+    print(" -> ".join(result.schema.join_path))
 
     print()
     print("INTENT")
@@ -66,9 +56,7 @@ def main() -> None:
         print()
         print("CLARIFICATION")
         print("=============")
-        print(
-            result.clarification.clarification
-        )
+        print(result.clarification.clarification)
 
 
 if __name__ == "__main__":

@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-DEFAULT_APP_NAME = (
-    "Text-to-SQL Clarification Engine"
-)
+DEFAULT_APP_NAME = "Text-to-SQL Clarification Engine"
 DEFAULT_APP_VERSION = "0.1.0"
 DEFAULT_ENVIRONMENT = "development"
 DEFAULT_LOG_LEVEL = "INFO"
@@ -38,9 +36,7 @@ def _get_required(
     value = os.getenv(name)
 
     if not value:
-        raise RuntimeError(
-            f"{name} environment variable is not set."
-        )
+        raise RuntimeError(f"{name} environment variable is not set.")
 
     return value
 
@@ -57,14 +53,10 @@ def _get_int(
     try:
         parsed = int(value)
     except ValueError as exc:
-        raise RuntimeError(
-            f"{name} must be an integer."
-        ) from exc
+        raise RuntimeError(f"{name} must be an integer.") from exc
 
     if parsed < 0:
-        raise RuntimeError(
-            f"{name} must be non-negative."
-        )
+        raise RuntimeError(f"{name} must be non-negative.")
 
     return parsed
 
@@ -81,14 +73,10 @@ def _get_float(
     try:
         parsed = float(value)
     except ValueError as exc:
-        raise RuntimeError(
-            f"{name} must be a number."
-        ) from exc
+        raise RuntimeError(f"{name} must be a number.") from exc
 
     if parsed < 0:
-        raise RuntimeError(
-            f"{name} must be non-negative."
-        )
+        raise RuntimeError(f"{name} must be non-negative.")
 
     return parsed
 

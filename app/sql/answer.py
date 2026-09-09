@@ -11,15 +11,9 @@ def format_sql_result(
         column = result.columns[0]
 
         if len(result.rows) == 1:
-            return (
-                f"{column}: "
-                f"{result.rows[0][0]}"
-            )
+            return f"{column}: {result.rows[0][0]}"
 
-        lines = [
-            f"{column}: {row[0]}"
-            for row in result.rows
-        ]
+        lines = [f"{column}: {row[0]}" for row in result.rows]
 
         return "\n".join(lines)
 

@@ -27,6 +27,7 @@ def test_retrieve_schema_finds_laptop_join_path():
         "products",
     ]
 
+
 def test_retrieve_schema_finds_product_from_value_only_question():
     schema = get_schema()
 
@@ -49,4 +50,4 @@ def test_retrieve_schema_finds_product_from_value_only_question():
 
     assert result.join_path == [
         "products",
-    ]    
+    ]

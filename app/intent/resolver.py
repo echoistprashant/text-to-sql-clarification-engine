@@ -13,8 +13,7 @@ def resolve_clarification(
 
     if state.clarification.field != "metric":
         raise ValueError(
-            f"Unsupported clarification field: "
-            f"{state.clarification.field}"
+            f"Unsupported clarification field: {state.clarification.field}"
         )
 
     if normalized_answer in {
@@ -39,6 +38,10 @@ def resolve_clarification(
         "highest total spending",
         "total spending",
         "spending",
+        "revenue",
+        "total revenue",
+        "sales",
+        "total sales",
     }:
         return _resolve_total_spending(state.intent)
 
@@ -80,7 +83,7 @@ def _resolve_total_spending(
     return QueryIntent(
         entity=intent.entity,
         filters=intent.filters,
-        metric="order_items.quantity * order_items.unit_price",
+        metric="orders.total_amount",
         aggregation=Aggregation.SUM,
         sort_direction=intent.sort_direction or SortDirection.DESC,
         limit=intent.limit,

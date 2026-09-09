@@ -33,9 +33,7 @@ def _normalize_operator(
     operator: object,
 ) -> str:
     if not isinstance(operator, str):
-        raise TypeError(
-            "Filter operator must be a string."
-        )
+        raise TypeError("Filter operator must be a string.")
 
     normalized = operator.strip().lower()
 
@@ -55,10 +53,7 @@ def _normalize_operator(
     if operator in allowed_operators:
         return operator
 
-    raise ValueError(
-        f"Unsupported filter operator: "
-        f"{operator!r}."
-    )
+    raise ValueError(f"Unsupported filter operator: {operator!r}.")
 
 
 def _parse_filters(
@@ -68,17 +63,13 @@ def _parse_filters(
         return []
 
     if not isinstance(data, list):
-        raise TypeError(
-            "'filters' must be a list."
-        )
+        raise TypeError("'filters' must be a list.")
 
     filters: list[IntentFilter] = []
 
     for item in data:
         if not isinstance(item, dict):
-            raise TypeError(
-                "Each filter must be an object."
-            )
+            raise TypeError("Each filter must be an object.")
 
         required_fields = (
             "column",
@@ -88,17 +79,12 @@ def _parse_filters(
 
         for field in required_fields:
             if field not in item:
-                raise ValueError(
-                    f"Filter is missing required field "
-                    f"'{field}'."
-                )
+                raise ValueError(f"Filter is missing required field '{field}'.")
 
         filters.append(
             IntentFilter(
                 column=item["column"],
-                operator=_normalize_operator(
-                    item["operator"]
-                ),
+                operator=_normalize_operator(item["operator"]),
                 value=item["value"],
             )
         )
@@ -114,24 +100,17 @@ def _parse_qualified_column(
         return None
 
     if not isinstance(value, str):
-        raise TypeError(
-            f"'{field_name}' must be a string or null."
-        )
+        raise TypeError(f"'{field_name}' must be a string or null.")
 
     value = value.strip()
 
     if not value:
-        raise ValueError(
-            f"'{field_name}' must not be empty."
-        )
+        raise ValueError(f"'{field_name}' must not be empty.")
 
     # group_by and metric are expected to use
     # table.column notation.
     if "." not in value:
-        raise ValueError(
-            f"'{field_name}' must be a fully qualified "
-            "table.column name."
-        )
+        raise ValueError(f"'{field_name}' must be a fully qualified table.column name.")
 
     table_name, column_name = value.split(
         ".",
@@ -139,10 +118,7 @@ def _parse_qualified_column(
     )
 
     if not table_name or not column_name:
-        raise ValueError(
-            f"'{field_name}' must be a valid "
-            "table.column name."
-        )
+        raise ValueError(f"'{field_name}' must be a valid table.column name.")
 
     return value
 
@@ -153,18 +129,12 @@ def parse_intent_response(
     try:
         data = json.loads(response)
     except json.JSONDecodeError as exc:
-        raise ValueError(
-            "LLM response is not valid JSON."
-        ) from exc
+        raise ValueError("LLM response is not valid JSON.") from exc
 
     if not isinstance(data, dict):
-        raise TypeError(
-            "LLM intent response must be a JSON object."
-        )
+        raise TypeError("LLM intent response must be a JSON object.")
 
-    filters = _parse_filters(
-        data.get("filters", [])
-    )
+    filters = _parse_filters(data.get("filters", []))
 
     aggregation = data.get("aggregation")
 
@@ -172,22 +142,16 @@ def parse_intent_response(
         try:
             aggregation = Aggregation(aggregation)
         except ValueError as exc:
-            raise ValueError(
-                f"Unsupported aggregation: "
-                f"{aggregation!r}."
-            ) from exc
+            raise ValueError(f"Unsupported aggregation: {aggregation!r}.") from exc
 
     sort_direction = data.get("sort_direction")
 
     if sort_direction is not None:
         try:
-            sort_direction = SortDirection(
-                sort_direction
-            )
+            sort_direction = SortDirection(sort_direction)
         except ValueError as exc:
             raise ValueError(
-                "Unsupported sort direction: "
-                f"{sort_direction!r}."
+                f"Unsupported sort direction: {sort_direction!r}."
             ) from exc
 
     limit = data.get("limit")
@@ -197,14 +161,10 @@ def parse_intent_response(
             limit,
             int,
         ):
-            raise ValueError(
-                "'limit' must be an integer or null."
-            )
+            raise ValueError("'limit' must be an integer or null.")
 
         if limit <= 0:
-            raise ValueError(
-                "'limit' must be greater than zero."
-            )
+            raise ValueError("'limit' must be greater than zero.")
 
     metric = _parse_qualified_column(
         data.get("metric"),

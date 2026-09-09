@@ -24,9 +24,7 @@ def get_schema() -> DatabaseSchema:
             for column in inspector.get_columns(table_name)
         ]
 
-        primary_key = inspector.get_pk_constraint(table_name)[
-            "constrained_columns"
-        ]
+        primary_key = inspector.get_pk_constraint(table_name)["constrained_columns"]
 
         foreign_keys = [
             ForeignKeySchema(

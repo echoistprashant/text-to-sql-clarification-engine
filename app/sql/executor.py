@@ -33,8 +33,5 @@ def execute_sql_query(
 
         return SQLExecutionResult(
             columns=list(result.keys()),
-            rows=[
-                tuple(row)
-                for row in rows
-            ],
+            rows=[tuple(row) for row in rows],
         )

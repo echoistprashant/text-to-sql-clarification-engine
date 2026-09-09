@@ -39,10 +39,7 @@ def _table_exists(
     schema: DatabaseSchema,
     table_name: str,
 ) -> bool:
-    return any(
-        table.name == table_name
-        for table in schema.tables
-    )
+    return any(table.name == table_name for table in schema.tables)
 
 
 def _column_exists(
@@ -54,10 +51,7 @@ def _column_exists(
         if table.name != table_name:
             continue
 
-        return any(
-            column.name == column_name
-            for column in table.columns
-        )
+        return any(column.name == column_name for column in table.columns)
 
     return False
 
@@ -68,45 +62,24 @@ def _validate_tables(
 ) -> None:
     table_names = set()
 
-    table_names.update(
-        column.table
-        for column in query.select_columns
-    )
+    table_names.update(column.table for column in query.select_columns)
 
-    table_names.update(
-        join.left_table
-        for join in query.joins
-    )
+    table_names.update(join.left_table for join in query.joins)
 
-    table_names.update(
-        join.right_table
-        for join in query.joins
-    )
+    table_names.update(join.right_table for join in query.joins)
 
-    table_names.update(
-        item.table
-        for item in query.filters
-    )
+    table_names.update(item.table for item in query.filters)
 
-    table_names.update(
-        aggregation.table
-        for aggregation in query.aggregations
-    )
+    table_names.update(aggregation.table for aggregation in query.aggregations)
 
-    table_names.update(
-        column.table
-        for column in query.group_by
-    )
+    table_names.update(column.table for column in query.group_by)
 
     for table_name in table_names:
         if not _table_exists(
             schema,
             table_name,
         ):
-            raise ValueError(
-                f"Table '{table_name}' "
-                "does not exist in the schema."
-            )
+            raise ValueError(f"Table '{table_name}' does not exist in the schema.")
 
 
 def _validate_columns(
@@ -120,8 +93,7 @@ def _validate_columns(
             column.column,
         ):
             raise ValueError(
-                f"Column '{column.table}.{column.column}' "
-                "does not exist in the schema."
+                f"Column '{column.table}.{column.column}' does not exist in the schema."
             )
 
     for item in query.filters:
@@ -131,8 +103,7 @@ def _validate_columns(
             item.column,
         ):
             raise ValueError(
-                f"Column '{item.table}.{item.column}' "
-                "does not exist in the schema."
+                f"Column '{item.table}.{item.column}' does not exist in the schema."
             )
 
     for aggregation in query.aggregations:
@@ -154,8 +125,7 @@ def _validate_columns(
             column.column,
         ):
             raise ValueError(
-                f"Column '{column.table}.{column.column}' "
-                "does not exist in the schema."
+                f"Column '{column.table}.{column.column}' does not exist in the schema."
             )
 
 
@@ -165,32 +135,23 @@ def _validate_joins(
 ) -> None:
     for join in query.joins:
         if join.join_type.upper() not in SUPPORTED_JOIN_TYPES:
-            raise ValueError(
-                f"Unsupported join type "
-                f"'{join.join_type}'."
-            )
+            raise ValueError(f"Unsupported join type '{join.join_type}'.")
 
         valid_relationship = False
 
         left_table = next(
-            table
-            for table in schema.tables
-            if table.name == join.left_table
+            table for table in schema.tables if table.name == join.left_table
         )
 
         right_table = next(
-            table
-            for table in schema.tables
-            if table.name == join.right_table
+            table for table in schema.tables if table.name == join.right_table
         )
 
         for foreign_key in left_table.foreign_keys:
             if (
                 foreign_key.column == join.left_column
-                and foreign_key.references_table
-                == join.right_table
-                and foreign_key.references_column
-                == join.right_column
+                and foreign_key.references_table == join.right_table
+                and foreign_key.references_column == join.right_column
             ):
                 valid_relationship = True
                 break
@@ -199,10 +160,8 @@ def _validate_joins(
             for foreign_key in right_table.foreign_keys:
                 if (
                     foreign_key.column == join.right_column
-                    and foreign_key.references_table
-                    == join.left_table
-                    and foreign_key.references_column
-                    == join.left_column
+                    and foreign_key.references_table == join.left_table
+                    and foreign_key.references_column == join.left_column
                 ):
                     valid_relationship = True
                     break
@@ -222,10 +181,7 @@ def _validate_aggregations(
         function = aggregation.function.upper()
 
         if function not in SUPPORTED_AGGREGATIONS:
-            raise ValueError(
-                f"Unsupported aggregation "
-                f"'{aggregation.function}'."
-            )
+            raise ValueError(f"Unsupported aggregation '{aggregation.function}'.")
 
 
 def _validate_filters(
@@ -235,10 +191,7 @@ def _validate_filters(
         operator = item.operator.upper()
 
         if operator not in SUPPORTED_FILTER_OPERATORS:
-            raise ValueError(
-                f"Unsupported filter operator "
-                f"'{item.operator}'."
-            )
+            raise ValueError(f"Unsupported filter operator '{item.operator}'.")
 
 
 def _validate_ordering(
@@ -248,10 +201,7 @@ def _validate_ordering(
         direction = item.direction.upper()
 
         if direction not in SUPPORTED_SORT_DIRECTIONS:
-            raise ValueError(
-                f"Unsupported sort direction "
-                f"'{item.direction}'."
-            )
+            raise ValueError(f"Unsupported sort direction '{item.direction}'.")
 
 
 def _validate_limit(
@@ -261,9 +211,7 @@ def _validate_limit(
         return
 
     if query.limit <= 0:
-        raise ValueError(
-            "LIMIT must be greater than zero."
-        )
+        raise ValueError("LIMIT must be greater than zero.")
 
 
 def validate_sql_query(
@@ -271,10 +219,7 @@ def validate_sql_query(
     query: SQLQuery,
 ) -> None:
     if not query.select_columns and not query.aggregations:
-        raise ValueError(
-            "SQL query must contain at least one "
-            "SELECT expression."
-        )
+        raise ValueError("SQL query must contain at least one SELECT expression.")
 
     _validate_tables(
         schema,

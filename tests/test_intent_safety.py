@@ -55,9 +55,7 @@ def test_mutating_keyword_is_detected_case_insensitively():
         ValueError,
         match="Only read-only database questions are supported",
     ):
-        validate_read_only_request(
-            "please DELETE all customers"
-        )
+        validate_read_only_request("please DELETE all customers")
 
 
 def test_mutating_keyword_is_detected_with_extra_whitespace():
@@ -65,6 +63,4 @@ def test_mutating_keyword_is_detected_with_extra_whitespace():
         ValueError,
         match="Only read-only database questions are supported",
     ):
-        validate_read_only_request(
-            "Delete    all    customers"
-        )
+        validate_read_only_request("Delete    all    customers")

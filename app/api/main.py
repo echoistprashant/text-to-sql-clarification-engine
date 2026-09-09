@@ -38,22 +38,17 @@ app = FastAPI(
     openapi_tags=[
         {
             "name": "system",
-            "description": (
-                "Application health and readiness endpoints."
-            ),
+            "description": ("Application health and readiness endpoints."),
         },
         {
             "name": "analysis",
             "description": (
-                "Natural-language question analysis and "
-                "clarification endpoints."
+                "Natural-language question analysis and clarification endpoints."
             ),
         },
         {
             "name": "execution",
-            "description": (
-                "SQL execution and clarification endpoints."
-            ),
+            "description": ("SQL execution and clarification endpoints."),
         },
     ],
 )
@@ -200,13 +195,10 @@ async def request_observability(
     try:
         response = await call_next(request)
     except Exception:
-        duration_ms = (
-            time.perf_counter() - start_time
-        ) * 1000
+        duration_ms = (time.perf_counter() - start_time) * 1000
 
         logger.exception(
-            "Request failed: method=%s path=%s "
-            "request_id=%s duration_ms=%.2f",
+            "Request failed: method=%s path=%s request_id=%s duration_ms=%.2f",
             request.method,
             request.url.path,
             request_id,
@@ -215,15 +207,12 @@ async def request_observability(
 
         raise
 
-    duration_ms = (
-        time.perf_counter() - start_time
-    ) * 1000
+    duration_ms = (time.perf_counter() - start_time) * 1000
 
     response.headers["X-Request-ID"] = request_id
 
     logger.info(
-        "Request completed: method=%s path=%s "
-        "status=%s request_id=%s duration_ms=%.2f",
+        "Request completed: method=%s path=%s status=%s request_id=%s duration_ms=%.2f",
         request.method,
         request.url.path,
         response.status_code,
@@ -246,8 +235,7 @@ async def request_validation_error_handler(
     )
 
     logger.warning(
-        "Request validation failed: method=%s "
-        "path=%s request_id=%s",
+        "Request validation failed: method=%s path=%s request_id=%s",
         request.method,
         request.url.path,
         request_id,
@@ -273,8 +261,7 @@ async def http_exception_handler(
     )
 
     logger.warning(
-        "HTTP error: method=%s path=%s "
-        "status=%s request_id=%s",
+        "HTTP error: method=%s path=%s status=%s request_id=%s",
         request.method,
         request.url.path,
         exc.status_code,
@@ -288,11 +275,7 @@ async def http_exception_handler(
     else:
         code = "HTTP_ERROR"
 
-    message = (
-        str(exc.detail)
-        if isinstance(exc.detail, str)
-        else "HTTP request failed."
-    )
+    message = str(exc.detail) if isinstance(exc.detail, str) else "HTTP request failed."
 
     return _error_response(
         status_code=exc.status_code,
@@ -320,8 +303,7 @@ async def value_error_handler(
     )
 
     logger.warning(
-        "Application error: method=%s path=%s "
-        "code=%s request_id=%s",
+        "Application error: method=%s path=%s code=%s request_id=%s",
         request.method,
         request.url.path,
         code,
@@ -348,8 +330,7 @@ async def unexpected_exception_handler(
     )
 
     logger.exception(
-        "Unhandled exception: method=%s path=%s "
-        "request_id=%s",
+        "Unhandled exception: method=%s path=%s request_id=%s",
         request.method,
         request.url.path,
         request_id,
@@ -397,9 +378,7 @@ def _build_intent_response(
 def _build_clarification_response(
     result: SQLAnalysisResult,
 ) -> ClarificationResponse | None:
-    clarification = (
-        result.analysis.clarification.clarification
-    )
+    clarification = result.analysis.clarification.clarification
 
     if clarification is None:
         return None
@@ -450,10 +429,7 @@ def _build_execution_response(
         parameters=result.parameters,
         execution=ExecutionResponse(
             columns=result.execution.columns,
-            rows=[
-                list(row)
-                for row in result.execution.rows
-            ],
+            rows=[list(row) for row in result.execution.rows],
             answer=result.answer,
         ),
     )
@@ -506,8 +482,7 @@ def health_check() -> dict[str, str]:
         503: {
             "model": APIErrorResponse,
             "description": (
-                "Required configuration or database "
-                "connection is unavailable."
+                "Required configuration or database connection is unavailable."
             ),
         },
     },

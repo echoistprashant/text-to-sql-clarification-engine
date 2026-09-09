@@ -15,10 +15,7 @@ def normalize_text(value: str) -> str:
     value = re.sub(r"[^a-z0-9\s]", " ", value)
     value = re.sub(r"\s+", " ", value).strip()
 
-    tokens = [
-        normalize_token(token)
-        for token in value.split()
-    ]
+    tokens = [normalize_token(token) for token in value.split()]
 
     return " ".join(tokens)
 

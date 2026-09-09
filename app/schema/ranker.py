@@ -4,6 +4,11 @@ from app.schema.models import (
     RankedTable,
     ValueMatch,
 )
+from app.schema.retriever import (
+    _CONCEPT_TABLE_MAPPINGS,
+    _extract_words,
+    _normalize_name,
+)
 
 
 def rank_tables(
@@ -12,26 +17,24 @@ def rank_tables(
     candidate_tables: list[str],
     value_matches: list[ValueMatch],
 ) -> list[RankedTable]:
-    question_terms = set(
-        question.lower().split()
-    )
+    question_terms = _extract_words(question)
 
     graph = build_schema_graph(schema)
 
-    value_match_tables = {
-        match.table_name
-        for match in value_matches
-    }
+    value_match_tables = {match.table_name for match in value_matches}
 
     direct_tables = {
         table.name
         for table in schema.tables
-        if table.name.lower() in question_terms
+        if (_normalize_name(table.name) & question_terms)
+        or any(
+            term in _CONCEPT_TABLE_MAPPINGS
+            and table.name in _CONCEPT_TABLE_MAPPINGS[term]
+            for term in question_terms
+        )
     }
 
-    evidence_tables = (
-        value_match_tables | direct_tables
-    )
+    evidence_tables = value_match_tables | direct_tables
 
     ranked = []
 
@@ -45,7 +48,7 @@ def rank_tables(
             score += 5
 
         for column in table.columns:
-            if column.name.lower() in question_terms:
+            if _normalize_name(column.name) & question_terms:
                 score += 3
 
         if table.name in value_match_tables:
@@ -78,8 +81,6 @@ def rank_tables(
             )
         )
 
-    ranked.sort(
-        key=lambda item: (-item.score, item.table_name)
-    )
+    ranked.sort(key=lambda item: (-item.score, item.table_name))
 
     return ranked

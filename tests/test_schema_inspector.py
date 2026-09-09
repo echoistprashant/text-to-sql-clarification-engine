@@ -19,8 +19,11 @@ def test_orders_has_customer_foreign_key():
 
     orders = next(table for table in schema.tables if table.name == "orders")
 
-    assert ForeignKeySchema(
-        column="customer_id",
-        references_table="customers",
-        references_column="id",
-    ) in orders.foreign_keys
+    assert (
+        ForeignKeySchema(
+            column="customer_id",
+            references_table="customers",
+            references_column="id",
+        )
+        in orders.foreign_keys
+    )

@@ -36,8 +36,7 @@ def detect_ambiguities(
             Ambiguity(
                 field="metric",
                 reason=(
-                    "An aggregation was specified, but no metric "
-                    "column was identified."
+                    "An aggregation was specified, but no metric column was identified."
                 ),
                 question="Which field should be aggregated?",
             )

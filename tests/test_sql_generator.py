@@ -71,42 +71,21 @@ def test_generate_customer_laptop_ranking_sql():
 
     assert "SELECT customers.name" in sql
 
-    assert (
-        "SUM(order_items.quantity) AS total_units"
-        in sql
-    )
+    assert "SUM(order_items.quantity) AS total_units" in sql
 
     assert "FROM customers" in sql
 
-    assert (
-        "JOIN orders "
-        "ON customers.id = orders.customer_id"
-        in sql
-    )
+    assert "JOIN orders ON customers.id = orders.customer_id" in sql
 
-    assert (
-        "JOIN order_items "
-        "ON orders.id = order_items.order_id"
-        in sql
-    )
+    assert "JOIN order_items ON orders.id = order_items.order_id" in sql
 
-    assert (
-        "JOIN products "
-        "ON order_items.product_id = products.id"
-        in sql
-    )
+    assert "JOIN products ON order_items.product_id = products.id" in sql
 
-    assert (
-        "WHERE products.name LIKE :param_1"
-        in sql
-    )
+    assert "WHERE products.name LIKE :param_1" in sql
 
     assert "GROUP BY customers.name" in sql
 
-    assert (
-        "ORDER BY total_units DESC"
-        in sql
-    )
+    assert "ORDER BY total_units DESC" in sql
 
     assert sql.endswith(";")
 
@@ -117,14 +96,9 @@ def test_generate_sql_requires_select_columns():
     try:
         generate_sql(query)
     except ValueError as exc:
-        assert str(exc) == (
-            "SQL query must contain a "
-            "SELECT expression."
-        )
+        assert str(exc) == ("SQL query must contain a SELECT expression.")
     else:
-        raise AssertionError(
-            "Expected ValueError for empty SELECT."
-        )
+        raise AssertionError("Expected ValueError for empty SELECT.")
 
 
 def test_generate_sql_supports_limit():
@@ -169,10 +143,7 @@ def test_compile_sql_returns_parameters():
 
     compiled = compile_sql(query)
 
-    assert (
-        "WHERE customers.country = :param_1"
-        in compiled.sql
-    )
+    assert "WHERE customers.country = :param_1" in compiled.sql
 
     assert compiled.parameters == {
         "param_1": "India",
@@ -210,9 +181,7 @@ def test_compile_sql_preserves_parameter_order():
         "param_2": "%Prashant%",
     }
 
-    assert (
-        compiled.sql.count(":param_") == 2
-    )
+    assert compiled.sql.count(":param_") == 2
 
 
 def test_compile_sql_does_not_interpolate_values():

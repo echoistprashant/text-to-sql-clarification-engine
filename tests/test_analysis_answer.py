@@ -38,36 +38,25 @@ def test_analysis_can_be_resolved_by_user_answer():
         "Most units purchased",
     )
 
-    assert resolved.question == (
-        "Which customers bought the most laptops?"
-    )
+    assert resolved.question == ("Which customers bought the most laptops?")
 
     assert resolved.clarification.resolved is True
     assert resolved.clarification.ambiguities == []
     assert resolved.clarification.clarification is None
 
     assert resolved.clarification.intent.entity == "customers"
-    assert (
-        resolved.clarification.intent.metric
-        == "order_items.quantity"
-    )
-    assert (
-        resolved.clarification.intent.aggregation.value
-        == "sum"
-    )
-    assert (
-        resolved.clarification.intent.sort_direction.value
-        == "desc"
-    )
+    assert resolved.clarification.intent.metric == "order_items.quantity"
+    assert resolved.clarification.intent.aggregation.value == "sum"
+    assert resolved.clarification.intent.sort_direction.value == "desc"
 
     assert "customers" in resolved.schema.tables
     assert "products" in resolved.schema.tables
 
     assert any(
-        match.table_name == "products"
-        and match.value == "Laptop Pro 15"
+        match.table_name == "products" and match.value == "Laptop Pro 15"
         for match in resolved.schema.value_matches
     )
+
 
 def test_answer_analysis_rejects_answer_after_resolution():
     schema = get_schema()
@@ -95,6 +84,4 @@ def test_answer_analysis_rejects_answer_after_resolution():
     except ValueError as exc:
         assert str(exc) == "The clarification is already resolved."
     else:
-        raise AssertionError(
-            "Expected ValueError for an already resolved analysis."
-        )    
+        raise AssertionError("Expected ValueError for an already resolved analysis.")

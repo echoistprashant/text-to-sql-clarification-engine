@@ -67,13 +67,12 @@ def answer_sql_clarification(
     schema: DatabaseSchema,
 ) -> SQLAnalysisResult:
     if result.analysis.clarification.resolved:
-        raise ValueError(
-            "The SQL analysis is already resolved."
-        )
+        raise ValueError("The SQL analysis is already resolved.")
 
     updated_analysis = answer_analysis(
         result.analysis,
         answer,
+        schema=schema,
     )
 
     if not updated_analysis.clarification.resolved:
@@ -91,19 +90,13 @@ def execute_sql_analysis(
     result: SQLAnalysisResult,
 ) -> SQLAnswerResult:
     if result.query is None:
-        raise ValueError(
-            "Cannot execute SQL from an unresolved analysis."
-        )
+        raise ValueError("Cannot execute SQL from an unresolved analysis.")
 
     if result.sql is None:
-        raise ValueError(
-            "Cannot execute SQL without compiled SQL."
-        )
+        raise ValueError("Cannot execute SQL without compiled SQL.")
 
     if result.parameters is None:
-        raise ValueError(
-            "Cannot execute SQL without parameters."
-        )
+        raise ValueError("Cannot execute SQL without parameters.")
 
     execution = execute_sql_query(
         result.query,
@@ -128,9 +121,7 @@ def _build_sql_result(
     schema: DatabaseSchema,
 ) -> SQLAnalysisResult:
     if not analysis.clarification.resolved:
-        raise ValueError(
-            "Cannot build SQL from unresolved clarification."
-        )
+        raise ValueError("Cannot build SQL from unresolved clarification.")
 
     intent = analysis.clarification.intent
 

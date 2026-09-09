@@ -25,9 +25,7 @@ def _find_table(
         if table.name == table_name:
             return table
 
-    raise ValueError(
-        f"Table '{table_name}' does not exist in the schema."
-    )
+    raise ValueError(f"Table '{table_name}' does not exist in the schema.")
 
 
 def _find_column(
@@ -45,8 +43,7 @@ def _find_column(
             return column
 
     raise ValueError(
-        f"Column '{table_name}.{column_name}' "
-        "does not exist in the schema."
+        f"Column '{table_name}.{column_name}' does not exist in the schema."
     )
 
 
@@ -66,10 +63,7 @@ def _find_display_column(
         "description",
     )
 
-    column_names = {
-        column.name
-        for column in table.columns
-    }
+    column_names = {column.name for column in table.columns}
 
     for preferred_name in preferred_names:
         if preferred_name in column_names:
@@ -79,9 +73,7 @@ def _find_display_column(
         return table.primary_key[0]
 
     if not table.columns:
-        raise ValueError(
-            f"Table '{table_name}' has no columns."
-        )
+        raise ValueError(f"Table '{table_name}' has no columns.")
 
     return table.columns[0].name
 
@@ -92,9 +84,7 @@ def _split_qualified_column(
     parts = value.split(".", 1)
 
     if len(parts) != 2:
-        raise ValueError(
-            f"Expected a qualified column name, got '{value}'."
-        )
+        raise ValueError(f"Expected a qualified column name, got '{value}'.")
 
     return parts[0], parts[1]
 
@@ -116,9 +106,7 @@ def _build_filters(
     }
 
     for item in intent.filters:
-        table_name, column_name = _split_qualified_column(
-            item.column
-        )
+        table_name, column_name = _split_qualified_column(item.column)
 
         _find_column(
             schema,
@@ -129,9 +117,9 @@ def _build_filters(
         # A concrete schema value match is more precise than
         # a broad textual filter on the same column.
         if (
-            (table_name, column_name) in concrete_value_keys
-            and item.operator.upper() in {"LIKE", "NOT LIKE"}
-        ):
+            table_name,
+            column_name,
+        ) in concrete_value_keys and item.operator.upper() in {"LIKE", "NOT LIKE"}:
             continue
 
         filter_key = (
@@ -185,6 +173,7 @@ def _build_filters(
 
     return filters
 
+
 def _collect_required_tables(
     intent: QueryIntent,
     schema_result: SchemaRetrievalResult,
@@ -194,29 +183,22 @@ def _collect_required_tables(
     }
 
     for item in intent.filters:
-        table_name, _ = _split_qualified_column(
-            item.column
-        )
+        table_name, _ = _split_qualified_column(item.column)
         required_tables.add(table_name)
 
     if intent.metric is not None:
-        metric_table, _ = _split_qualified_column(
-            intent.metric
-        )
+        metric_table, _ = _split_qualified_column(intent.metric)
         required_tables.add(metric_table)
 
     if intent.group_by is not None:
-        group_by_table, _ = _split_qualified_column(
-            intent.group_by
-        )
+        group_by_table, _ = _split_qualified_column(intent.group_by)
         required_tables.add(group_by_table)
 
     for match in schema_result.value_matches:
-        required_tables.add(
-            match.table_name
-        )
+        required_tables.add(match.table_name)
 
     return required_tables
+
 
 def _build_join_path(
     schema: DatabaseSchema,
@@ -233,34 +215,22 @@ def _build_join_path(
         return [intent.entity]
 
     if not schema_result.join_path:
-        raise ValueError(
-            "Schema retrieval result must contain a join path."
-        )
+        raise ValueError("Schema retrieval result must contain a join path.")
 
-    existing_path = list(
-        schema_result.join_path
-    )
+    existing_path = list(schema_result.join_path)
 
-    if required_tables.issubset(
-        set(existing_path)
-    ):
+    if required_tables.issubset(set(existing_path)):
         if intent.entity in existing_path:
-            entity_index = existing_path.index(
-                intent.entity
-            )
+            entity_index = existing_path.index(intent.entity)
 
             if entity_index == 0:
                 return existing_path
 
-        graph = build_schema_graph(
-            schema
-        )
+        graph = build_schema_graph(schema)
 
         rebuilt_path = [intent.entity]
 
-        for required_table in sorted(
-            required_tables
-        ):
+        for required_table in sorted(required_tables):
             if required_table == intent.entity:
                 continue
 
@@ -272,27 +242,20 @@ def _build_join_path(
 
             if path is None:
                 raise ValueError(
-                    "No join path exists between "
-                    "the tables required by the query."
+                    "No join path exists between the tables required by the query."
                 )
 
             for table_name in path[1:]:
                 if table_name not in rebuilt_path:
-                    rebuilt_path.append(
-                        table_name
-                    )
+                    rebuilt_path.append(table_name)
 
         return rebuilt_path
 
-    graph = build_schema_graph(
-        schema
-    )
+    graph = build_schema_graph(schema)
 
     combined_path = [intent.entity]
 
-    for required_table in sorted(
-        required_tables
-    ):
+    for required_table in sorted(required_tables):
         if required_table == intent.entity:
             continue
 
@@ -304,16 +267,12 @@ def _build_join_path(
 
         if path is None:
             raise ValueError(
-                "No join path exists between "
-                f"'{intent.entity}' and "
-                f"'{required_table}'."
+                f"No join path exists between '{intent.entity}' and '{required_table}'."
             )
 
         for table_name in path[1:]:
             if table_name not in combined_path:
-                combined_path.append(
-                    table_name
-                )
+                combined_path.append(table_name)
 
     return combined_path
 
@@ -324,9 +283,7 @@ def plan_sql_query(
     schema_result: SchemaRetrievalResult,
 ) -> SQLQuery:
     if intent.entity is None:
-        raise ValueError(
-            "Query intent must contain an entity."
-        )
+        raise ValueError("Query intent must contain an entity.")
 
     _find_table(
         schema,
@@ -342,11 +299,7 @@ def plan_sql_query(
     aggregations: list[SQLAggregation] = []
 
     if intent.metric is not None:
-        metric_table, metric_column = (
-            _split_qualified_column(
-                intent.metric
-            )
-        )
+        metric_table, metric_column = _split_qualified_column(intent.metric)
 
         _find_column(
             schema,
@@ -355,9 +308,7 @@ def plan_sql_query(
         )
 
         if intent.aggregation is None:
-            raise ValueError(
-                "A metric requires an aggregation."
-            )
+            raise ValueError("A metric requires an aggregation.")
 
         aggregations.append(
             SQLAggregation(
@@ -402,15 +353,8 @@ def plan_sql_query(
     # GROUP BY customers.name;
     # ---------------------------------------------------------
 
-    elif (
-        bool(aggregations)
-        and intent.group_by is not None
-    ):
-        group_table, group_column = (
-            _split_qualified_column(
-                intent.group_by
-            )
-        )
+    elif bool(aggregations) and intent.group_by is not None:
+        group_table, group_column = _split_qualified_column(intent.group_by)
 
         _find_column(
             schema,
@@ -423,13 +367,9 @@ def plan_sql_query(
             column=group_column,
         )
 
-        select_columns = [
-            group_column_expression
-        ]
+        select_columns = [group_column_expression]
 
-        group_by = [
-            group_column_expression
-        ]
+        group_by = [group_column_expression]
 
     # ---------------------------------------------------------
     # Non-aggregated query:
@@ -476,9 +416,7 @@ def plan_sql_query(
 
     if intent.sort_direction is not None:
         if not aggregations:
-            raise ValueError(
-                "Sorting an aggregated query requires a metric."
-            )
+            raise ValueError("Sorting an aggregated query requires a metric.")
 
         order_by.append(
             SQLOrder(

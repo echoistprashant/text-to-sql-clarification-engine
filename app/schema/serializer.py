@@ -9,13 +9,10 @@ def serialize_schema(schema: DatabaseSchema) -> str:
 
         for column in table.columns:
             nullability = "NULL" if column.nullable else "NOT NULL"
-            primary_key = (
-                " [PRIMARY KEY]" if column.name in table.primary_key else ""
-            )
+            primary_key = " [PRIMARY KEY]" if column.name in table.primary_key else ""
 
             lines.append(
-                f"- {column.name} {column.data_type} "
-                f"{nullability}{primary_key}"
+                f"- {column.name} {column.data_type} {nullability}{primary_key}"
             )
 
         if table.foreign_keys:

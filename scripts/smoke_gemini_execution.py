@@ -11,9 +11,7 @@ from app.pipeline.sql import (
 def main() -> None:
     load_dotenv()
 
-    question = (
-        "Which customers bought the most laptops?"
-    )
+    question = "Which customers bought the most laptops?"
 
     schema = get_schema()
     client = GeminiLLMClient()
@@ -32,9 +30,7 @@ def main() -> None:
     print()
     print("RESOLVED")
     print("========")
-    print(
-        result.analysis.clarification.resolved
-    )
+    print(result.analysis.clarification.resolved)
 
     if result.query is None:
         print()
@@ -72,9 +68,7 @@ def main() -> None:
     print()
     print("ROW COUNT")
     print("=========")
-    print(
-        len(answer_result.execution.rows)
-    )
+    print(len(answer_result.execution.rows))
 
     print()
     print("FINAL ANSWER")

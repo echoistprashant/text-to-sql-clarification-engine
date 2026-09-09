@@ -22,25 +22,15 @@ class GeminiLLMClient:
         self._client = genai.Client(
             api_key=settings.gemini_api_key,
             http_options=types.HttpOptions(
-                timeout=int(
-                    settings.gemini_timeout_seconds * 1000
-                ),
+                timeout=int(settings.gemini_timeout_seconds * 1000),
             ),
         )
 
-        self._model = (
-            model
-            if model is not None
-            else settings.gemini_model
-        )
+        self._model = model if model is not None else settings.gemini_model
 
-        self._max_retries = (
-            settings.gemini_max_retries
-        )
+        self._max_retries = settings.gemini_max_retries
 
-        self._initial_retry_delay_seconds = (
-            settings.gemini_initial_retry_delay_seconds
-        )
+        self._initial_retry_delay_seconds = settings.gemini_initial_retry_delay_seconds
 
     def generate(
         self,
@@ -54,9 +44,7 @@ class GeminiLLMClient:
                     model=self._model,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
-                        response_schema=(
-                            INTENT_RESPONSE_SCHEMA
-                        ),
+                        response_schema=(INTENT_RESPONSE_SCHEMA),
                     ),
                 )
 
@@ -65,9 +53,7 @@ class GeminiLLMClient:
                 )
 
                 if not response.text:
-                    raise RuntimeError(
-                        "Gemini returned an empty response."
-                    )
+                    raise RuntimeError("Gemini returned an empty response.")
 
                 return response.text
 
@@ -75,13 +61,8 @@ class GeminiLLMClient:
                 if attempt >= self._max_retries:
                     raise
 
-                delay = (
-                    self._initial_retry_delay_seconds
-                    * (2**attempt)
-                )
+                delay = self._initial_retry_delay_seconds * (2**attempt)
 
                 time.sleep(delay)
 
-        raise RuntimeError(
-            "Gemini generation failed."
-        )
+        raise RuntimeError("Gemini generation failed.")

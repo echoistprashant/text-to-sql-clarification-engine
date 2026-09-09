@@ -6,19 +6,12 @@ from app.schema.models import DatabaseSchema
 def build_schema_graph(
     schema: DatabaseSchema,
 ) -> dict[str, set[str]]:
-    graph: dict[str, set[str]] = {
-        table.name: set()
-        for table in schema.tables
-    }
+    graph: dict[str, set[str]] = {table.name: set() for table in schema.tables}
 
     for table in schema.tables:
         for foreign_key in table.foreign_keys:
-            graph[table.name].add(
-                foreign_key.references_table
-            )
-            graph[foreign_key.references_table].add(
-                table.name
-            )
+            graph[table.name].add(foreign_key.references_table)
+            graph[foreign_key.references_table].add(table.name)
 
     return graph
 
@@ -29,10 +22,7 @@ def expand_tables(
     max_hops: int = 1,
 ) -> set[str]:
     visited = set(seed_tables)
-    queue = deque(
-        (table, 0)
-        for table in seed_tables
-    )
+    queue = deque((table, 0) for table in seed_tables)
 
     while queue:
         current_table, hops = queue.popleft()
@@ -46,9 +36,7 @@ def expand_tables(
         ):
             if neighbor not in visited:
                 visited.add(neighbor)
-                queue.append(
-                    (neighbor, hops + 1)
-                )
+                queue.append((neighbor, hops + 1))
 
     return visited
 
@@ -76,11 +64,10 @@ def shortest_distance(
 
             if neighbor not in visited:
                 visited.add(neighbor)
-                queue.append(
-                    (neighbor, distance + 1)
-                )
+                queue.append((neighbor, distance + 1))
 
     return None
+
 
 def shortest_path(
     graph: dict[str, set[str]],

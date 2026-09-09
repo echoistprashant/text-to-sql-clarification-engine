@@ -66,9 +66,7 @@ def test_parse_intent_response_rejects_invalid_json():
         ValueError,
         match="LLM response is not valid JSON",
     ):
-        parse_intent_response(
-            '{"entity": "customers"'
-        )
+        parse_intent_response('{"entity": "customers"')
 
 
 def test_parse_intent_response_requires_object():
@@ -76,9 +74,7 @@ def test_parse_intent_response_requires_object():
         TypeError,
         match="must be a JSON object",
     ):
-        parse_intent_response(
-            '["customers"]'
-        )
+        parse_intent_response('["customers"]')
 
 
 def test_parse_intent_response_rejects_invalid_aggregation():
@@ -332,6 +328,7 @@ def test_parse_intent_response_rejects_non_string_operator():
         match="Filter operator must be a string",
     ):
         parse_intent_response(response)
+
 
 def test_parse_intent_response_normalizes_double_equals_operator():
     response = """

@@ -32,9 +32,7 @@ def run_case(
             max_hops=3,
         )
 
-        resolved = (
-            result.analysis.clarification.resolved
-        )
+        resolved = result.analysis.clarification.resolved
 
         passed = resolved == case.expected_resolved
 
@@ -89,10 +87,7 @@ def print_report(
     results: list[EvaluationResult],
 ) -> None:
     total = len(results)
-    passed = sum(
-        result.passed
-        for result in results
-    )
+    passed = sum(result.passed for result in results)
     failed = total - passed
 
     print("PHASE 6 EVALUATION")
@@ -104,52 +99,27 @@ def print_report(
     print()
 
     for result in results:
-        status = (
-            "PASS"
-            if result.passed
-            else "FAIL"
-        )
+        status = "PASS" if result.passed else "FAIL"
 
-        print(
-            f"[{status}] "
-            f"{result.case.name}"
-        )
+        print(f"[{status}] {result.case.name}")
 
-        print(
-            f"  Question: "
-            f"{result.case.question!r}"
-        )
+        print(f"  Question: {result.case.question!r}")
 
-        print(
-            f"  Category: "
-            f"{result.case.category}"
-        )
+        print(f"  Category: {result.case.category}")
 
-        print(
-            f"  Expected resolved: "
-            f"{result.case.expected_resolved}"
-        )
+        print(f"  Expected resolved: {result.case.expected_resolved}")
 
-        print(
-            f"  Actual resolved: "
-            f"{result.resolved}"
-        )
+        print(f"  Actual resolved: {result.resolved}")
 
         if result.sql is not None:
             print("  SQL:")
             print(result.sql)
 
         if result.parameters is not None:
-            print(
-                f"  Parameters: "
-                f"{result.parameters}"
-            )
+            print(f"  Parameters: {result.parameters}")
 
         if result.error is not None:
-            print(
-                f"  Error: "
-                f"{result.error}"
-            )
+            print(f"  Error: {result.error}")
 
         print()
 

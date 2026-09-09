@@ -62,13 +62,9 @@ client = TestClient(app)
 
 
 def setup_function():
-    app.dependency_overrides[
-        get_database_schema
-    ] = override_schema
+    app.dependency_overrides[get_database_schema] = override_schema
 
-    app.dependency_overrides[
-        get_llm_client
-    ] = override_llm_client
+    app.dependency_overrides[get_llm_client] = override_llm_client
 
 
 def teardown_function():
@@ -109,9 +105,7 @@ def test_analyze_uses_injected_dependencies():
     response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Show customers from India"
-            ),
+            "question": ("Show customers from India"),
         },
     )
 
@@ -119,9 +113,7 @@ def test_analyze_uses_injected_dependencies():
 
     body = response.json()
 
-    assert body["question"] == (
-        "Show customers from India"
-    )
+    assert body["question"] == ("Show customers from India")
 
     assert body["resolved"] is True
     assert body["clarification"] is None
@@ -131,9 +123,7 @@ def test_analyze_returns_structured_intent():
     response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Show customers from India"
-            ),
+            "question": ("Show customers from India"),
         },
     )
 
@@ -141,9 +131,7 @@ def test_analyze_returns_structured_intent():
 
     body = response.json()
 
-    assert body["question"] == (
-        "Show customers from India"
-    )
+    assert body["question"] == ("Show customers from India")
 
     assert body["resolved"] is True
 
@@ -168,10 +156,7 @@ def test_analyze_returns_clarification():
     response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -179,10 +164,7 @@ def test_analyze_returns_clarification():
 
     body = response.json()
 
-    assert body["question"] == (
-        "Which customers bought "
-        "the most laptops?"
-    )
+    assert body["question"] == ("Which customers bought the most laptops?")
 
     assert body["resolved"] is False
     assert body["analysis_id"] is not None
@@ -198,10 +180,7 @@ def test_analyze_clarification_resolves_metric():
     first_response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -226,18 +205,13 @@ def test_analyze_clarification_resolves_metric():
 
     body = response.json()
 
-    assert body["question"] == (
-        "Which customers bought "
-        "the most laptops?"
-    )
+    assert body["question"] == ("Which customers bought the most laptops?")
 
     assert body["resolved"] is True
 
     assert body["intent"]["entity"] == "customers"
 
-    assert body["intent"]["metric"] == (
-        "order_items.quantity"
-    )
+    assert body["intent"]["metric"] == ("order_items.quantity")
 
     assert body["intent"]["aggregation"] == "sum"
 
@@ -252,10 +226,7 @@ def test_analyze_returns_null_sql_when_unresolved():
     response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -273,10 +244,7 @@ def test_analyze_clarification_returns_sql():
     first_response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -339,10 +307,7 @@ def test_execute_returns_clarification_when_unresolved():
     response = client.post(
         "/execute",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -364,9 +329,7 @@ def test_execute_returns_database_answer():
     response = client.post(
         "/execute",
         json={
-            "question": (
-                "Show customers from India"
-            ),
+            "question": ("Show customers from India"),
         },
     )
 
@@ -391,10 +354,7 @@ def test_execute_returns_database_answer():
 
     assert body["execution"]["rows"]
 
-    names = {
-        row[0]
-        for row in body["execution"]["rows"]
-    }
+    names = {row[0] for row in body["execution"]["rows"]}
 
     assert "Amit Sharma" in names
     assert "Priya Singh" in names
@@ -402,19 +362,14 @@ def test_execute_returns_database_answer():
 
     assert body["execution"]["answer"]
 
-    assert body["execution"]["answer"].startswith(
-        "name: "
-    )
+    assert body["execution"]["answer"].startswith("name: ")
 
 
 def test_execute_clarification_returns_database_answer():
     first_response = client.post(
         "/execute",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -444,9 +399,7 @@ def test_execute_clarification_returns_database_answer():
 
     assert body["intent"]["entity"] == "customers"
 
-    assert body["intent"]["metric"] == (
-        "order_items.quantity"
-    )
+    assert body["intent"]["metric"] == ("order_items.quantity")
 
     assert body["intent"]["aggregation"] == "sum"
 
@@ -482,9 +435,7 @@ def test_execute_clarification_returns_database_answer():
         ["Rahul Sharma", 1],
     ]
 
-    assert body["execution"]["answer"] == (
-        "name: Rahul Sharma, metric_value: 1"
-    )
+    assert body["execution"]["answer"] == ("name: Rahul Sharma, metric_value: 1")
 
 
 def test_execute_clarification_rejects_unknown_analysis():
@@ -590,9 +541,7 @@ def test_destructive_request_uses_unsupported_operation_error():
 
     body = response.json()
 
-    assert body["error"]["code"] == (
-        "UNSUPPORTED_OPERATION"
-    )
+    assert body["error"]["code"] == ("UNSUPPORTED_OPERATION")
 
     assert body["error"]["message"] == (
         "Only read-only database questions are supported."
@@ -603,10 +552,7 @@ def test_unresolved_analysis_is_stored():
     response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -639,10 +585,7 @@ def test_analyze_clarification_removes_resolved_analysis():
     response = client.post(
         "/analyze",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -689,10 +632,7 @@ def test_execute_clarification_removes_resolved_analysis():
     response = client.post(
         "/execute",
         json={
-            "question": (
-                "Which customers bought "
-                "the most laptops?"
-            ),
+            "question": ("Which customers bought the most laptops?"),
         },
     )
 
@@ -748,9 +688,7 @@ def test_health_check_returns_ok():
 def test_request_id_is_generated():
     response = client.get("/health")
 
-    request_id = response.headers.get(
-        "X-Request-ID"
-    )
+    request_id = response.headers.get("X-Request-ID")
 
     assert request_id
     assert len(request_id) == 32

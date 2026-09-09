@@ -48,10 +48,9 @@ class RankedTable:
     score: int
 
 
-
 @dataclass(frozen=True)
 class SchemaRetrievalResult:
     tables: list[str]
     value_matches: list[ValueMatch]
     ranked_tables: list[RankedTable]
-    join_path: list[str]    
+    join_path: list[str]

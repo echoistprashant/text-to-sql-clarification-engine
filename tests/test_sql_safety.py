@@ -4,9 +4,7 @@ from app.sql.safety import validate_read_only_sql
 
 
 def test_select_is_allowed():
-    validate_read_only_sql(
-        "SELECT name FROM customers"
-    )
+    validate_read_only_sql("SELECT name FROM customers")
 
 
 def test_select_with_whitespace_is_allowed():
@@ -33,6 +31,10 @@ def test_select_with_whitespace_is_allowed():
         "GRANT SELECT ON customers TO user1",
         "REVOKE SELECT ON customers FROM user1",
         "MERGE INTO customers USING other_table",
+        "COPY customers TO '/tmp/test.csv'",
+        "EXEC sp_help",
+        "EXECUTE immediate_query",
+        "CALL test_proc()",
     ],
 )
 def test_mutating_sql_is_rejected(sql):
@@ -56,10 +58,7 @@ def test_multiple_statements_are_rejected():
         ValueError,
         match="Only one SQL statement",
     ):
-        validate_read_only_sql(
-            "SELECT name FROM customers; "
-            "DELETE FROM customers"
-        )
+        validate_read_only_sql("SELECT name FROM customers; DELETE FROM customers")
 
 
 def test_non_select_statement_is_rejected():
@@ -67,6 +66,4 @@ def test_non_select_statement_is_rejected():
         ValueError,
         match="Only SELECT statements",
     ):
-        validate_read_only_sql(
-            "SHOW TABLES"
-        )
+        validate_read_only_sql("SHOW TABLES")

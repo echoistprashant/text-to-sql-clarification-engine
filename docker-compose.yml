@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: text-to-sql-postgres
+    environment:
+      POSTGRES_DB: text_to_sql
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: dev_password_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - text-to-sql-postgres-data:/var/lib/postgresql/data
+    networks:
+      - text-to-sql-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: text-to-sql-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://app_user:dev_password_123@postgres:5432/text_to_sql
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    networks:
+      - text-to-sql-network
+
+volumes:
+  text-to-sql-postgres-data:
+    external: true
+
+networks:
+  text-to-sql-network:
+    driver: bridge

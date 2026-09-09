@@ -8,10 +8,7 @@ def test_format_sql_result_returns_no_results_message():
         rows=[],
     )
 
-    assert (
-        format_sql_result(result)
-        == "No results found."
-    )
+    assert format_sql_result(result) == "No results found."
 
 
 def test_format_sql_result_formats_single_column():
@@ -23,10 +20,7 @@ def test_format_sql_result_formats_single_column():
         ],
     )
 
-    assert format_sql_result(result) == (
-        "name: Rahul Sharma\n"
-        "name: Priya Patel"
-    )
+    assert format_sql_result(result) == ("name: Rahul Sharma\nname: Priya Patel")
 
 
 def test_format_sql_result_formats_single_row():
@@ -40,10 +34,7 @@ def test_format_sql_result_formats_single_row():
         ],
     )
 
-    assert format_sql_result(result) == (
-        "name: Rahul Sharma, "
-        "metric_value: 1"
-    )
+    assert format_sql_result(result) == ("name: Rahul Sharma, metric_value: 1")
 
 
 def test_format_sql_result_formats_multiple_rows():
@@ -59,6 +50,5 @@ def test_format_sql_result_formats_multiple_rows():
     )
 
     assert format_sql_result(result) == (
-        "name: Rahul Sharma, metric_value: 1\n"
-        "name: Priya Patel, metric_value: 3"
+        "name: Rahul Sharma, metric_value: 1\nname: Priya Patel, metric_value: 3"
     )

@@ -57,6 +57,7 @@ def test_analysis_store_delete_missing_analysis_is_safe():
 
     store.delete("missing")
 
+
 def test_analysis_store_update_missing_analysis_raises():
     store = AnalysisStore()
     result = _result()

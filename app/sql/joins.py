@@ -12,9 +12,7 @@ def _get_table(
         if table.name == table_name:
             return table
 
-    raise ValueError(
-        f"Table '{table_name}' does not exist in the schema."
-    )
+    raise ValueError(f"Table '{table_name}' does not exist in the schema.")
 
 
 def resolve_join(

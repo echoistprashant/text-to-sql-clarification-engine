@@ -56,9 +56,7 @@ def test_build_llm_schema_context_contains_relevant_schema():
 
 
 def test_build_llm_schema_context_contains_join_path():
-    schema = DatabaseSchema(
-        tables=[]
-    )
+    schema = DatabaseSchema(tables=[])
 
     schema_result = SchemaRetrievalResult(
         tables=[],
@@ -77,16 +75,11 @@ def test_build_llm_schema_context_contains_join_path():
         schema_result,
     )
 
-    assert (
-        "customers -> orders -> "
-        "order_items -> products"
-    ) in context
+    assert ("customers -> orders -> order_items -> products") in context
 
 
 def test_build_llm_schema_context_contains_value_matches():
-    schema = DatabaseSchema(
-        tables=[]
-    )
+    schema = DatabaseSchema(tables=[])
 
     schema_result = SchemaRetrievalResult(
         tables=[],
@@ -107,7 +100,4 @@ def test_build_llm_schema_context_contains_value_matches():
     )
 
     assert "RELEVANT DATABASE VALUES:" in context
-    assert (
-        'products.name = "Laptop Pro 15"'
-        in context
-    )
+    assert 'products.name = "Laptop Pro 15"' in context

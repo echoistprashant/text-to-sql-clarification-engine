@@ -26,16 +26,13 @@ def test_analysis_pipeline_combines_schema_and_intent():
         max_hops=3,
     )
 
-    assert result.question == (
-        "Which customers bought the most laptops?"
-    )
+    assert result.question == ("Which customers bought the most laptops?")
 
     assert "customers" in result.schema.tables
     assert "products" in result.schema.tables
 
     assert any(
-        match.table_name == "products"
-        and match.value == "Laptop Pro 15"
+        match.table_name == "products" and match.value == "Laptop Pro 15"
         for match in result.schema.value_matches
     )
 

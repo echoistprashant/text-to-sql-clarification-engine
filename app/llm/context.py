@@ -9,18 +9,12 @@ def build_llm_schema_context(
     schema: DatabaseSchema,
     schema_result: SchemaRetrievalResult,
 ) -> str:
-    relevant_table_names = set(
-        schema_result.tables
-    )
+    relevant_table_names = set(schema_result.tables)
 
-    relevant_table_names.update(
-        schema_result.join_path
-    )
+    relevant_table_names.update(schema_result.join_path)
 
     relevant_tables = [
-        table
-        for table in schema.tables
-        if table.name in relevant_table_names
+        table for table in schema.tables if table.name in relevant_table_names
     ]
 
     relevant_schema = DatabaseSchema(
@@ -54,9 +48,7 @@ def build_llm_schema_context(
 
         for match in schema_result.value_matches:
             sections.append(
-                f"- {match.table_name}."
-                f"{match.column_name} = "
-                f'"{match.value}"'
+                f'- {match.table_name}.{match.column_name} = "{match.value}"'
             )
 
     return "\n".join(sections)

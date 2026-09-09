@@ -60,9 +60,7 @@ def test_plan_sql_query_from_resolved_intent():
     assert aggregation.column == "quantity"
     assert aggregation.alias == "metric_value"
 
-    assert query.group_by == [
-        query.select_columns[0]
-    ]
+    assert query.group_by == [query.select_columns[0]]
 
     assert query.order_by[0].expression == "metric_value"
     assert query.order_by[0].direction == "DESC"
@@ -110,10 +108,7 @@ def test_planner_supports_all_aggregations(
     )
 
     assert len(query.aggregations) == 1
-    assert (
-        query.aggregations[0].function
-        == aggregation.value.upper()
-    )
+    assert query.aggregations[0].function == aggregation.value.upper()
 
 
 def test_planner_converts_intent_filters():
@@ -432,6 +427,7 @@ def test_planner_rejects_missing_join_path():
             intent,
             schema_result,
         )
+
 
 def test_planner_does_not_group_standalone_aggregation():
     schema = get_schema()
