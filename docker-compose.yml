@@ -42,6 +42,21 @@ services:
     networks:
       - text-to-sql-network
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: text-to-sql-frontend
+    command: ["uv", "run", "--no-dev", "streamlit", "run", "app/frontend/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    environment:
+      BACKEND_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    networks:
+      - text-to-sql-network
+
 volumes:
   text-to-sql-postgres-data:
     name: text-to-sql-postgres-data

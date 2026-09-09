@@ -10,11 +10,12 @@ The **Text-to-SQL Clarification Engine** translates natural-language database in
 
 - **Flexible LLM Providers (OpenRouter & Gemini)**: Uses OpenRouter API (`google/gemini-2.5-flash`, `openai/gpt-4o-mini`, etc.) or the official Google GenAI Gemini SDK with strict JSON structured outputs (`entity`, `filters`, `metric`, `aggregation`, `group_by`, `sort_direction`, `limit`).
 - **Interactive Clarification Loop**: Automatically detects missing metrics or ambiguous entities and asks targeted clarifying questions. Stores conversation states in an in-memory analysis store (`AnalysisStore`) with unique `analysis_id` handles.
+- **Modern Streamlit Frontend**: Clean, demo-ready web UI with backend connection monitoring, quick example queries, interactive clarification inputs, formatted data tables, dynamic metric cards, and generated SQL views.
 - **Intelligent Schema Retrieval & Join Path Resolution**: Inspects database metadata via SQLAlchemy, profiles column values, normalizes terms (handling singular/plural and business synonyms like *revenue*, *sales*, *units*), and uses Dijkstra's shortest path algorithm over schema foreign-key graphs to construct multi-table join paths.
 - **Safe Read-Only SQL Compiler**: Validates allowed tables, columns, joins, and aggregations against the real database schema. Rejects non-read-only queries (e.g. `DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `GRANT`, `COPY`, `EXEC`, `CALL`).
 - **Parameterized Queries**: Compiles SQL filters into named SQLAlchemy bind parameters (e.g. `:param_1`), completely preventing SQL injection.
 - **Production API & Observability**: FastAPI REST API with structured errors, request IDs via `X-Request-ID` headers, request logging, and connection pooling.
-- **Containerized Deployment**: Multi-stage Dockerfile and Docker Compose orchestration with health/readiness checks (`/health` and `/ready`).
+- **Containerized Deployment**: Multi-stage Dockerfile and Docker Compose orchestration with health/readiness checks (`/health` and `/ready`) and optional frontend container.
 - **Reproducible Seed Data**: Complete PostgreSQL schema definition (`database/schema.sql`) and deterministic seed script (`database/seed.sql`) containing 5 customers, 4 orders, 6 order items, 6 products, and 4 payments with a verified $148,000.00 total revenue.
 
 ---
@@ -77,6 +78,9 @@ text-to-sql-clarification-engine/
 │   ├── db/
 │   │   ├── connection.py          # SQLAlchemy engine, connection pooling, and health checks
 │   │   └── schema_inspector.py    # Database metadata reflection (tables, cols, PKs, FKs)
+│   ├── frontend/
+│   │   ├── client.py              # Robust HTTP client communicating with FastAPI
+│   │   └── streamlit_app.py       # Portfolio-quality Streamlit user interface
 │   ├── intent/
 │   │   ├── ambiguity.py           # Ambiguity detection algorithms
 │   │   ├── clarification.py       # Clarification question generation
@@ -184,6 +188,26 @@ text-to-sql-clarification-engine/
    uv run uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
+6. **Run the Streamlit Frontend**:
+   ```bash
+   uv run streamlit run app/frontend/streamlit_app.py
+   ```
+   Open your browser at `http://localhost:8501`. The frontend will automatically connect to `http://localhost:8000`.
+   *(Optional)* To target a different backend address, specify `BACKEND_URL`:
+   ```bash
+   BACKEND_URL=http://localhost:8000 uv run streamlit run app/frontend/streamlit_app.py
+   ```
+
+### Docker Compose Quickstart (Full Stack)
+
+To run the entire system (PostgreSQL + FastAPI + Streamlit frontend) with a single command:
+```bash
+docker compose up --build
+```
+- **Streamlit Web UI**: [http://localhost:8501](http://localhost:8501)
+- **FastAPI Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **PostgreSQL Database**: `localhost:5432`
+
 ---
 
 ## API Endpoints
@@ -204,7 +228,7 @@ Execute the entire test suite with `uv`:
 ```bash
 uv run pytest -v
 ```
-**Results**: 211 passed in ~12 seconds.
+**Results**: 230 passed in ~12 seconds.
 
 ### Code Quality & Linting
 Run Ruff check and formatting:
@@ -212,7 +236,7 @@ Run Ruff check and formatting:
 uv run ruff check .
 uv run ruff format --check .
 ```
-**Results**: All checks passed! 96 files formatted.
+**Results**: All checks passed! 101 files formatted.
 
 ---
 
