@@ -1,5 +1,4 @@
 import pytest
-
 from app.db.schema_inspector import get_schema
 from app.sql.joins import build_joins, resolve_join
 

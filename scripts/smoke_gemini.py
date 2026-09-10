@@ -1,6 +1,5 @@
-from dotenv import load_dotenv
-
 from app.llm.gemini import GeminiLLMClient
+from dotenv import load_dotenv
 
 
 def main() -> None:

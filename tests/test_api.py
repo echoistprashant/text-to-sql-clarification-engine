@@ -1,8 +1,5 @@
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
-from sqlalchemy.exc import OperationalError
-
 from app.api.main import (
     app,
     get_database_schema,
@@ -11,6 +8,8 @@ from app.api.main import (
 from app.config.settings import Settings
 from app.db.schema_inspector import get_schema
 from app.llm.fake import FakeLLMClient
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
 
 
 class FakeTestLLMClient(FakeLLMClient):

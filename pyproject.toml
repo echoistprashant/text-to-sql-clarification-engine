@@ -27,7 +27,13 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
+where = ["backend"]
 include = ["app*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["backend", "frontend", "."]
+testpaths = ["tests"]
 
 [tool.ruff.lint.per-file-ignores]
 "app/api/*.py" = ["B008"]
+"backend/app/api/*.py" = ["B008"]

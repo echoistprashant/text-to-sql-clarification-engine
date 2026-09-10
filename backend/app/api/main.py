@@ -2,12 +2,6 @@ import logging
 import time
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-from sqlalchemy.exc import SQLAlchemyError
-
 from app.api.analysis_store import AnalysisStore
 from app.config import get_settings
 from app.db.connection import check_database_connection
@@ -24,6 +18,11 @@ from app.pipeline.sql import (
     execute_sql_analysis,
 )
 from app.schema.models import DatabaseSchema
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 

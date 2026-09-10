@@ -1,5 +1,4 @@
 import pytest
-
 from app.db.schema_inspector import get_schema
 from app.intent.models import (
     Aggregation,

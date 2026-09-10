@@ -10,8 +10,8 @@ services:
       - "5432:5432"
     volumes:
       - text-to-sql-postgres-data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app_user -d text_to_sql"]
       interval: 5s
@@ -22,7 +22,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: text-to-sql-api
     env_file:
@@ -44,10 +44,9 @@ services:
 
   frontend:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: text-to-sql-frontend
-    command: ["uv", "run", "--no-dev", "streamlit", "run", "app/frontend/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     environment:
       BACKEND_URL: http://api:8000
     ports:

@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 import pytest
-
 from app.db.schema_inspector import get_schema
 from app.intent.models import Aggregation, IntentFilter, QueryIntent, SortDirection
 from app.intent.workflow import create_clarification_state

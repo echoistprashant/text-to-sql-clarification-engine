@@ -69,71 +69,76 @@ Natural-Language Question
 
 ```text
 text-to-sql-clarification-engine/
-├── app/
-│   ├── api/
-│   │   ├── analysis_store.py      # In-memory TTL/state store for pending clarifications
-│   │   └── main.py                # FastAPI endpoints, middleware, response models
-│   ├── config/
-│   │   └── settings.py            # Environment configuration with pydantic/dotenv
-│   ├── db/
-│   │   ├── connection.py          # SQLAlchemy engine, connection pooling, and health checks
-│   │   └── schema_inspector.py    # Database metadata reflection (tables, cols, PKs, FKs)
-│   ├── frontend/
-│   │   ├── client.py              # Robust HTTP client communicating with FastAPI
-│   │   └── streamlit_app.py       # Portfolio-quality Streamlit user interface
-│   ├── intent/
-│   │   ├── ambiguity.py           # Ambiguity detection algorithms
-│   │   ├── clarification.py       # Clarification question generation
-│   │   ├── extractor.py           # LLM intent prompt with file/in-memory fallback
-│   │   ├── models.py              # QueryIntent, IntentFilter, Aggregation, SortDirection
-│   │   ├── parser.py              # Robust JSON parser for LLM outputs
-│   │   ├── resolver.py            # Clarification answer resolver (revenue, units, orders)
-│   │   ├── safety.py              # Natural language prompt injection and safety guard
-│   │   ├── state.py               # Clarification state management
-│   │   └── workflow.py            # Clarification workflow transitions
-│   ├── llm/
-│   │   ├── client.py              # LLM client interface protocol
-│   │   ├── context.py             # Schema context serializer for prompts
-│   │   ├── fake.py                # Deterministic fake LLM client for unit tests
-│   │   ├── gemini.py              # Official google-genai client with retry/backoff
-│   │   └── schemas.py             # GenAI structured output JSON schemas
-│   ├── pipeline/
-│   │   ├── analysis.py            # End-to-end analysis pipeline
-│   │   └── sql.py                 # SQL analysis, compilation, and execution pipeline
-│   ├── schema/
-│   │   ├── graph.py               # Schema graph construction and breadth-first search
-│   │   ├── join_path.py           # Shortest-path join resolution across multiple tables
-│   │   ├── models.py              # DatabaseSchema, TableSchema, ColumnSchema
-│   │   ├── profiler.py            # Distinct value profiler for text columns
-│   │   ├── ranker.py              # Table scoring and relevance ranker
-│   │   ├── retrieval.py           # Schema retrieval orchestrator
-│   │   ├── retriever.py           # Concept-to-table mapper and seed finder
-│   │   ├── serializer.py          # Schema-to-prompt serialization
-│   │   └── value_matcher.py       # Exact and fuzzy value matching in questions
-│   └── sql/
-│       ├── answer.py              # Natural-language answer formatter
-│       ├── executor.py            # SQLAlchemy parameterized query executor
-│       ├── generator.py           # AST to parameterized SQL compiler
-│       ├── joins.py               # Join clause generator
-│       ├── models.py              # SQLQuery, SQLColumn, SQLJoin AST representations
-│       ├── planner.py             # Intent-to-SQL AST planner
-│       ├── safety.py              # Read-only SQL validator & forbidden keyword scanner
-│       └── validator.py           # Schema integrity checker for planned SQL
-├── database/
-│   ├── schema.sql                 # DDL definitions for PostgreSQL
-│   └── seed.sql                   # Deterministic seed data ($148,000 revenue)
-├── prompts/
-│   └── intent.txt                 # Canonical prompt template for Gemini intent extraction
-├── scripts/
-│   ├── smoke_gemini.py            # Smoke test for Gemini client
-│   └── smoke_phase2.py            # Smoke test for end-to-end pipeline
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── analysis_store.py      # In-memory TTL/state store for pending clarifications
+│   │   │   └── main.py                # FastAPI endpoints, middleware, response models
+│   │   ├── config/
+│   │   │   └── settings.py            # Environment configuration with pydantic/dotenv
+│   │   ├── db/
+│   │   │   ├── connection.py          # SQLAlchemy engine, connection pooling, and health checks
+│   │   │   └── schema_inspector.py    # Database metadata reflection (tables, cols, PKs, FKs)
+│   │   ├── intent/
+│   │   │   ├── ambiguity.py           # Ambiguity detection algorithms
+│   │   │   ├── clarification.py       # Clarification question generation
+│   │   │   ├── extractor.py           # LLM intent prompt with file/in-memory fallback
+│   │   │   ├── models.py              # QueryIntent, IntentFilter, Aggregation, SortDirection
+│   │   │   ├── parser.py              # Robust JSON parser for LLM outputs
+│   │   │   ├── resolver.py            # Clarification answer resolver (revenue, units, orders)
+│   │   │   ├── safety.py              # Natural language prompt injection and safety guard
+│   │   │   ├── state.py               # Clarification state management
+│   │   │   └── workflow.py            # Clarification workflow transitions
+│   │   ├── llm/
+│   │   │   ├── client.py              # LLM client interface protocol
+│   │   │   ├── context.py             # Schema context serializer for prompts
+│   │   │   ├── fake.py                # Deterministic fake LLM client for unit tests
+│   │   │   ├── gemini.py              # Official google-genai client with retry/backoff
+│   │   │   ├── openrouter.py          # OpenRouter API client
+│   │   │   └── schemas.py             # Structured output JSON schemas
+│   │   ├── pipeline/
+│   │   │   ├── analysis.py            # End-to-end analysis pipeline
+│   │   │   └── sql.py                 # SQL analysis, compilation, and execution pipeline
+│   │   ├── schema/
+│   │   │   ├── graph.py               # Schema graph construction and breadth-first search
+│   │   │   ├── join_path.py           # Shortest-path join resolution across multiple tables
+│   │   │   ├── models.py              # DatabaseSchema, TableSchema, ColumnSchema
+│   │   │   ├── profiler.py            # Distinct value profiler for text columns
+│   │   │   ├── ranker.py              # Table scoring and relevance ranker
+│   │   │   ├── retrieval.py           # Schema retrieval orchestrator
+│   │   │   ├── retriever.py           # Concept-to-table mapper and seed finder
+│   │   │   ├── serializer.py          # Schema-to-prompt serialization
+│   │   │   └── value_matcher.py       # Exact and fuzzy value matching in questions
+│   │   └── sql/
+│   │       ├── answer.py              # Natural-language answer formatter
+│   │       ├── executor.py            # SQLAlchemy parameterized query executor
+│   │       ├── generator.py           # AST to parameterized SQL compiler
+│   │       ├── joins.py               # Join clause generator
+│   │       ├── models.py              # SQLQuery, SQLColumn, SQLJoin AST representations
+│   │       ├── planner.py             # Intent-to-SQL AST planner
+│   │       ├── safety.py              # Read-only SQL validator & forbidden keyword scanner
+│   │       └── validator.py           # Schema integrity checker for planned SQL
+│   ├── database/
+│   │   ├── schema.sql                 # DDL definitions for PostgreSQL
+│   │   └── seed.sql                   # Deterministic seed data ($148,000 revenue)
+│   ├── prompts/
+│   │   └── intent.txt                 # Canonical prompt template for LLM intent extraction
+│   ├── Dockerfile                     # Standalone backend container
+│   └── requirements.txt               # Standalone backend dependencies
+├── frontend/
+│   ├── .streamlit/
+│   │   └── config.toml                # Streamlit configuration
+│   ├── client.py                      # Robust HTTP client communicating with FastAPI
+│   ├── streamlit_app.py               # Portfolio-quality Streamlit user interface
+│   ├── Dockerfile                     # Standalone frontend container
+│   └── requirements.txt               # Standalone frontend dependencies
 ├── tests/
-│   ├── test_api.py                # FastAPI endpoints and error handling tests
-│   ├── test_regression_queries.py # 10 production regression queries
-│   ├── ...                        # 211 comprehensive unit & integration tests
-├── Dockerfile                     # Multi-stage container definition
-├── docker-compose.yml             # Service orchestration (PostgreSQL + FastAPI)
-├── pyproject.toml                 # uv / pip dependency declarations
+│   ├── test_api.py                    # FastAPI endpoints and error handling tests
+│   ├── test_frontend.py               # Frontend HTTP client tests
+│   ├── test_regression_queries.py     # 10 production regression queries
+│   └── ...                            # 230 comprehensive unit & integration tests
+├── docker-compose.yml                 # Service orchestration (PostgreSQL + API + Frontend)
+├── pyproject.toml                     # uv / pip dependency declarations
 └── README.md
 ```
 
@@ -190,12 +195,12 @@ text-to-sql-clarification-engine/
 
 6. **Run the Streamlit Frontend**:
    ```bash
-   uv run streamlit run app/frontend/streamlit_app.py
+   uv run streamlit run frontend/streamlit_app.py
    ```
    Open your browser at `http://localhost:8501`. The frontend will automatically connect to `http://localhost:8000`.
    *(Optional)* To target a different backend address, specify `BACKEND_URL`:
    ```bash
-   BACKEND_URL=http://localhost:8000 uv run streamlit run app/frontend/streamlit_app.py
+   BACKEND_URL=http://localhost:8000 uv run streamlit run frontend/streamlit_app.py
    ```
 
 ### Docker Compose Quickstart (Full Stack)

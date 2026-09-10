@@ -1,13 +1,22 @@
 import pandas as pd
 import streamlit as st
 
-from app.frontend.client import (
-    APIClientError,
-    check_backend_health,
-    execute_question,
-    get_backend_url,
-    submit_clarification,
-)
+try:
+    from client import (
+        APIClientError,
+        check_backend_health,
+        execute_question,
+        get_backend_url,
+        submit_clarification,
+    )
+except ImportError:
+    from frontend.client import (
+        APIClientError,
+        check_backend_health,
+        execute_question,
+        get_backend_url,
+        submit_clarification,
+    )
 
 st.set_page_config(
     page_title="Text-to-SQL Clarification Engineer",

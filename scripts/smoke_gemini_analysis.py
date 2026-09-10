@@ -1,8 +1,7 @@
-from dotenv import load_dotenv
-
 from app.db.schema_inspector import get_schema
 from app.llm.gemini import GeminiLLMClient
 from app.pipeline.analysis import analyze_question
+from dotenv import load_dotenv
 
 
 def main() -> None:

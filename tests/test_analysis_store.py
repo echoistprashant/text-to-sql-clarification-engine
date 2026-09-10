@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
 import pytest
-
 from app.api.analysis_store import AnalysisStore
 from app.pipeline.sql import SQLAnalysisResult
 

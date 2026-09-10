@@ -1,7 +1,6 @@
-from sqlalchemy import text
-
 from app.db.connection import engine
 from app.schema.models import ColumnValueProfile
+from sqlalchemy import text
 
 
 def profile_column_values(

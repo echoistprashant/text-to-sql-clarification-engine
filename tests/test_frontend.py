@@ -3,13 +3,22 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from app.frontend.client import (
-    APIClientError,
-    check_backend_health,
-    execute_question,
-    get_backend_url,
-    submit_clarification,
-)
+try:
+    from frontend.client import (
+        APIClientError,
+        check_backend_health,
+        execute_question,
+        get_backend_url,
+        submit_clarification,
+    )
+except ImportError:
+    from client import (
+        APIClientError,
+        check_backend_health,
+        execute_question,
+        get_backend_url,
+        submit_clarification,
+    )
 
 
 def test_get_backend_url_default(monkeypatch):

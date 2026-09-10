@@ -1,10 +1,9 @@
 import time
 
-from google import genai
-from google.genai import errors, types
-
 from app.config import get_settings
 from app.llm.schemas import INTENT_RESPONSE_SCHEMA
+from google import genai
+from google.genai import errors, types
 
 DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite"
 

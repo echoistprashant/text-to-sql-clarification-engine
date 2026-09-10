@@ -1,5 +1,4 @@
 import pytest
-
 from app.intent.safety import validate_read_only_request
 
 

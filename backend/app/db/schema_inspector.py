@@ -1,5 +1,3 @@
-from sqlalchemy import inspect
-
 from app.db.connection import engine
 from app.schema.models import (
     ColumnSchema,
@@ -7,6 +5,7 @@ from app.schema.models import (
     ForeignKeySchema,
     TableSchema,
 )
+from sqlalchemy import inspect
 
 
 def get_schema() -> DatabaseSchema:

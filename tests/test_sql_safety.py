@@ -1,5 +1,4 @@
 import pytest
-
 from app.sql.safety import validate_read_only_sql
 
 

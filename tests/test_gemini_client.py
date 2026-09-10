@@ -1,13 +1,12 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from google.genai import errors
-
 from app.llm.gemini import (
     DEFAULT_GEMINI_MODEL,
     MAX_RETRIES,
     GeminiLLMClient,
 )
+from google.genai import errors
 
 
 class FakeResponse:

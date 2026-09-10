@@ -1,5 +1,4 @@
 import pytest
-
 from app.intent.models import QueryIntent, SortDirection
 from app.intent.workflow import (
     answer_clarification,

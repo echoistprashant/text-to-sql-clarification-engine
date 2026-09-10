@@ -8,8 +8,14 @@ _PROMPT_PATH = Path(__file__).resolve().parent.parent.parent / "prompts" / "inte
 
 
 def _load_prompt_template() -> str:
-    if _PROMPT_PATH.is_file():
-        return _PROMPT_PATH.read_text(encoding="utf-8")
+    for candidate in [
+        _PROMPT_PATH,
+        Path(__file__).resolve().parents[2] / "backend" / "prompts" / "intent.txt",
+        Path.cwd() / "backend" / "prompts" / "intent.txt",
+        Path.cwd() / "prompts" / "intent.txt",
+    ]:
+        if candidate.is_file():
+            return candidate.read_text(encoding="utf-8")
     return _FALLBACK_PROMPT_TEMPLATE
 
 

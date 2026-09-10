@@ -1,11 +1,10 @@
-from dotenv import load_dotenv
-
 from app.db.schema_inspector import get_schema
 from app.llm.gemini import GeminiLLMClient
 from app.pipeline.sql import (
     analyze_for_sql,
     execute_sql_analysis,
 )
+from dotenv import load_dotenv
 
 
 def main() -> None:

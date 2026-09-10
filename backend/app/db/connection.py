@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine, text
-
 from app.config import get_settings
+from sqlalchemy import create_engine, text
 
 settings = get_settings()
 

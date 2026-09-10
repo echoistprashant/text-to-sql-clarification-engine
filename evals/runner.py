@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from app.db.schema_inspector import get_schema
 from app.pipeline.sql import analyze_for_sql
+
 from evals.questions import (
     EVALUATION_CASES,
     EvaluationCase,

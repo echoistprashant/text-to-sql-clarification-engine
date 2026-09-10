@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-
 from app.llm.openrouter import DEFAULT_OPENROUTER_MODEL, OpenRouterLLMClient
 
 

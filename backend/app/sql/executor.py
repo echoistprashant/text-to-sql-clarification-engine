@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 
-from sqlalchemy import text
-
 from app.db.connection import engine
 from app.sql.generator import compile_sql
 from app.sql.models import SQLQuery
 from app.sql.safety import validate_read_only_sql
+from sqlalchemy import text
 
 
 @dataclass(frozen=True)

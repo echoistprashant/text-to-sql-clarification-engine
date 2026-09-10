@@ -1,5 +1,4 @@
 import pytest
-
 from app.intent.models import (
     Aggregation,
     IntentFilter,

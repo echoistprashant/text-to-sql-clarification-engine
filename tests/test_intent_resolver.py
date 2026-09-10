@@ -54,7 +54,6 @@ def test_resolve_total_spending():
 
 def test_resolve_invalid_answer():
     import pytest
-
     from app.intent.resolver import resolve_clarification
 
     state = make_state()
